@@ -1,12 +1,9 @@
-﻿using System;
+﻿using NUnit.Framework;
+using ProtoBuf;
+using ProtoBuf.Meta;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Runtime.Serialization;
-using ProtoBuf.Meta;
-using System.IO;
-using ProtoBuf;
-using NUnit.Framework;
 
 namespace Examples.Issues
 {
@@ -59,7 +56,7 @@ namespace Examples.Issues
                 var model = TypeModel.Create();
                 model.Add(typeof(IList<int>), false).SetSurrogate(typeof(InnocentType));
                 model.CompileInPlace();
-            }, "Repeated data (a list, collection, etc) has inbuilt behaviour and cannot be used as a subclass");
+            }, "Repeated data (a list, collection, etc) has inbuilt behaviour and cannot use a surrogate");
         }
         [Test]
         public void ListAsSurrogate()
@@ -69,7 +66,7 @@ namespace Examples.Issues
                 var model = TypeModel.Create();
                 model.Add(typeof(IMobileObject), false).SetSurrogate(typeof(MobileList<int>));
                 model.CompileInPlace();
-            }, "Repeated data (a list, collection, etc) has inbuilt behaviour and cannot be used as a subclass");
+            }, "Repeated data (a list, collection, etc) has inbuilt behaviour and cannot be used as a surrogate");
         }
 
 
