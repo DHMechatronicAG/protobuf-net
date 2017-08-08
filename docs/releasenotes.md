@@ -19,19 +19,62 @@ If you feel like supporting my efforts, I won't stop you:
 
 If you can't, that's fine too.
 
-## v3.* (future plans)
+## v3.* (not yet started)
 
-see: [protobuf-net: large data, and the future](http://blog.marcgravell.com/2017/05/protobuf-net-large-data-and-future.html)
+- see: [protobuf-net: large data, and the future](http://blog.marcgravell.com/2017/05/protobuf-net-large-data-and-future.html)
+- gRPC?
 
-## v2.3 (work in progress)
+## v2.4.0 (not yet started)
 
-- proto2/proto3 DSL processing tools to make a resurgance
+- build-time tooling
+- `dynamic` API over types known only via descriptors loaded at runtime
+- `Any` support
 
-preview: [https://protogen.marcgravell.com/](https://protogen.marcgravell.com/)
+## v2.3.3 (not yet released)
 
-## v2.2.2 (not yet released)
+- fix protogen bug with `[DefaultValue]` for enums not including the fully qualified name when required
 
-- fix: `Type` members should work with `GetProto<T>` (as `string`)
+## v2.3.2
+
+- fix bug with `IgnoreListHandling` not being respected for custom dictionary-like types (with "map" taking precedence)
+
+## v2.3.1
+
+- fix bug with `optional` being emitted for sub-types in proto3 schemas (#280)
+- add setter to `ValueMember.Name` - in particular allows runtime enum name configuration (#281)
+- fix bug with implicit map when `TKey` is an enum type (#289)
+- fix build config (optimized build)
+
+## v2.3.0
+
+- include better information when rejecting jagged arrays / nested lists ([SO 45062514](https://stackoverflow.com/q/45062514/23354))
+
+## v2.3.0-gamma
+
+- fix issue with "map" detection of complex dictionaries-of-arrays incorrectly trying to configure a `MetaType` for the array type
+
+## v2.3.0-beta
+
+- fix issue with unwanted static constructors being detected (#276)
+- explicitly prevent `MetaType` instances for arrays
+
+## v2.3.0-alpha
+
+- [further reading](http://blog.marcgravell.com/2017/06/protobuf-net-gets-proto3-support.html)
+- proto2/proto3 DSL processing tools to make a resurgance; [preview is available here](https://protogen.marcgravell.com/)
+- proto3 schema generation
+- full support for `map<,>`, `Timestamp`, `Duration`
+- dictionaries are now "maps" by default - duplicated keys *replace* values rather than causing exceptions
+- support for one-of
+- enums are now "pass thru" whenever possible - unknown values will not normally cause exceptions (this indirectly fixes #260, but proto3 semantics was the motivation)
+- various bug-fixes
+ - fix bug in schema output forn enums withut a zero value (#224)
+ - fix bug in runtime handling of immutable collections (#264)
+ - fix issue with serialization context being list (#268)
+ - fix issue with type error message when type is generic (#267)
+ - net20 / net35 targets reinstated for NuGet build (#262)
+ - fix for `Uri` handling (#162 / #261)
+ - fix: `Type` members should work with `GetProto<T>` (as `string`)
 
 ## v2.2.1
 

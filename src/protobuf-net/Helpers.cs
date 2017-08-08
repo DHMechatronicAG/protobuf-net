@@ -2,7 +2,9 @@
 using System;
 using System.Collections;
 using System.IO;
-
+#if COREFX
+using System.Linq;
+#endif
 #if FEAT_IKVM
 using Type = IKVM.Reflection.Type;
 using IKVM.Reflection;
@@ -497,18 +499,11 @@ namespace ProtoBuf
         }
         internal static ConstructorInfo GetConstructor(TypeInfo type, Type[] parameterTypes, bool nonPublic)
         {
-            foreach (ConstructorInfo ctor in type.DeclaredConstructors)
-            {
-                if (!nonPublic && !ctor.IsPublic) continue;
-                if (IsMatch(ctor.GetParameters(), parameterTypes)) return ctor;
-            }
-            return null;
+            return GetConstructors(type, nonPublic).SingleOrDefault(ctor => IsMatch(ctor.GetParameters(), parameterTypes));
         }
         internal static ConstructorInfo[] GetConstructors(TypeInfo typeInfo, bool nonPublic)
         {
-            if (nonPublic) return System.Linq.Enumerable.ToArray(typeInfo.DeclaredConstructors);
-            return System.Linq.Enumerable.ToArray(
-                System.Linq.Enumerable.Where(typeInfo.DeclaredConstructors, x => x.IsPublic));
+            return typeInfo.DeclaredConstructors.Where(c => !c.IsStatic && (nonPublic || c.IsPublic)).ToArray();
         }
         internal static PropertyInfo GetProperty(Type type, string name, bool nonPublic)
         {
