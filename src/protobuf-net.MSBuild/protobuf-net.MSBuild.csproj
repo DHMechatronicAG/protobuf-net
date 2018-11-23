@@ -11,10 +11,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Build.Framework" Version="15.7.179">
+    <PackageReference Include="Microsoft.Build.Framework" Version="15.9.20">
       <PrivateAssets>All</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="15.7.179">
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="15.9.20">
       <PrivateAssets>All</PrivateAssets>
     </PackageReference>
   </ItemGroup>
@@ -27,7 +27,14 @@
     <ProjectReference Include="..\protobuf-net.Reflection\protobuf-net.Reflection.csproj">
       <PrivateAssets>All</PrivateAssets>
     </ProjectReference>
-    <ProjectReference Include="..\protobuf-net\protobuf-net.csproj"/>
+    <ProjectReference Include="..\protobuf-net\protobuf-net.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="Nerdbank.GitVersioning" Version="2.2.33">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <Target Name="CopyBuildFiles" AfterTargets="CoreBuild" BeforeTargets="_CalculateInputsOutputsForPack">

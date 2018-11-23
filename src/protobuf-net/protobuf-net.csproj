@@ -3,7 +3,7 @@
     <AssemblyName>protobuf-net</AssemblyName>
     <Title>protobuf-net</Title>
     <Description>Provides simple access to fast and efficient "Protocol Buffers" serialization from .NET applications</Description>
-    <TargetFrameworks>net20;net35;net40;netstandard1.0;netstandard1.3;netstandard2.0;uap10.0;netcoreapp2.1</TargetFrameworks>
+    <TargetFrameworks>net40;netstandard1.0;netstandard1.3;netstandard2.0;uap10.0;netcoreapp2.1</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>EMIT_ASSEMBLY_INFO</DefineConstants>
     <!-- new build tools spit these out -->
@@ -19,9 +19,6 @@
     <Configurations>Debug;Release;VS</Configurations>
   </PropertyGroup>
   <!-- define configuration per-platform -->
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net20'">
-    <FeatureServiceModel>false</FeatureServiceModel>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(TargetFramework)' == 'uap10.0'">
     <FeatureServiceModel>false</FeatureServiceModel>
     <FeatureServiceModelConfiguration>false</FeatureServiceModelConfiguration>
@@ -91,5 +88,11 @@
   <ItemGroup Condition="'$(ImportLibs)' == 'standard'">
     <PackageReference Include="System.Reflection.TypeExtensions" Version="4.4.0" />
     <PackageReference Include="System.Xml.XmlSerializer" Version="4.3.0" />    
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Update="Nerdbank.GitVersioning" Version="2.2.33">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 </Project>
