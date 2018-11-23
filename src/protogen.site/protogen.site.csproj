@@ -5,19 +5,16 @@
     <PackageTargetFallback>$(PackageTargetFallback);portable-net45+win8+wp8+wpa81;</PackageTargetFallback>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <Configurations>Debug;Release;VS</Configurations>
+    <TypeScriptToolsVersion>2.8</TypeScriptToolsVersion>
 
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Properties\PublishProfiles\protogensite20170521042027 - Web Deploy.pubxml" />
+    <Content Remove="wwwroot\lib\monaco-editor\monaco.d.ts" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="wwwroot\js\home.js" />
-    <Content Include="wwwroot\js\proto3lang.js" />
-    <Content Include="wwwroot\protoc\google\protobuf\duration.proto" />
-    <Content Include="wwwroot\protoc\google\protobuf\timestamp.proto" />
-    <Content Include="wwwroot\protoc\protoc.exe" />
+    <None Remove="Properties\PublishProfiles\protogensite20170521042027 - Web Deploy.pubxml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -41,6 +38,10 @@
   <ItemGroup>
     <ProjectReference Include="..\protobuf-net\protobuf-net.csproj" />
     <ProjectReference Include="..\protobuf-net.Reflection\protobuf-net.Reflection.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <TypeScriptCompile Include="wwwroot\lib\monaco-editor\monaco.d.ts" />
   </ItemGroup>
 
   <ItemGroup>

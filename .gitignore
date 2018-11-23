@@ -18,4 +18,10 @@ Tests.Dnx/sandbox.txt
 Tests.Dnx/protoTest.txt
 Tests.Dnx/TraceCompile.txt
 *.NoCommit.*
+*.pubxml
 del.me
+_ReSharper.Caches/
+BenchmarkDotNet.Artifacts/
+filedata.bin
+*.binlog
+src/VBTest/*

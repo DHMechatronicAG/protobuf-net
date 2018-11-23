@@ -21,7 +21,10 @@ namespace protogen
                 var importPaths = new List<string>(); // -I{PATH}, --proto_path={PATH}
                 var inputFiles = new List<string>(); // {PROTO_FILES} (everything not `-`)
                 bool exec = false;
+                string package = null; // --package=foo
                 CodeGenerator codegen = null;
+
+                Dictionary<string, string> options = null;
                 foreach (string arg in args)
                 {
                     string lhs = arg, rhs = "";
@@ -42,12 +45,23 @@ namespace protogen
                         rhs = arg.Substring(2);
                     }
 
+
+                    if(lhs.StartsWith("+"))
+                    {
+                        if(options == null) options = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                        options[lhs.Substring(1)] = rhs;
+                        continue;
+                    }
+
                     switch (lhs)
                     {
                         case "":
                             break;
                         case "--version":
                             version = true;
+                            break;
+                        case "--package":
+                            package = rhs;
                             break;
                         case "-h":
                         case "--help":
@@ -58,6 +72,13 @@ namespace protogen
                             codegen = CSharpCodeGenerator.Default;
                             exec = true;
                             break;
+                        case "--vb_out":
+                            outPath = rhs;
+#pragma warning disable CS0618
+                            codegen = VBCodeGenerator.Default;
+#pragma warning restore CS0618
+                            exec = true;
+                            break;
                         case "--descriptor_set_out":
                             outPath = rhs;
                             codegen = null;
@@ -65,6 +86,13 @@ namespace protogen
                             break;
                         case "--proto_path":
                             importPaths.Add(rhs);
+                            break;
+                        case "--pwd":
+                            Console.WriteLine($"Current Directory: {Directory.GetCurrentDirectory()}");
+#if NETCOREAPP2_1 || NETSTANDARD2_0
+                            Console.WriteLine($"Program: {typeof(Program).Assembly.Location}");
+                            Console.WriteLine($"CodeGenerator: {typeof(CodeGenerator).Assembly.Location}");
+#endif
                             break;
                         default:
                             if (lhs.StartsWith("-") || !string.IsNullOrWhiteSpace(rhs))
@@ -87,9 +115,12 @@ namespace protogen
                 }
                 else if (version)
                 {
-                    Console.WriteLine($"protogen {GetVersion<Program>()}");
-                    Console.WriteLine($"protobuf-net {GetVersion<ProtoReader>()}");
-                    Console.WriteLine($"protobuf-net.Reflection {GetVersion<FileDescriptorSet>()}");
+                    var ver = GetVersion<Program>();
+                    Console.WriteLine($"protogen {ver}");
+                    var tmp = GetVersion<ProtoReader>();
+                    if (tmp != ver) Console.WriteLine($"protobuf-net {tmp}");
+                    tmp = GetVersion<FileDescriptorSet>();
+                    if (tmp != ver) Console.WriteLine($"protobuf-net.Reflection {tmp}");
                     return 0;
                 }
                 else if (inputFiles.Count == 0)
@@ -105,7 +136,10 @@ namespace protogen
                 else
                 {
                     int exitCode = 0;
-                    var set = new FileDescriptorSet();
+                    var set = new FileDescriptorSet
+                    {
+                        DefaultPackage = package
+                    };
                     if (importPaths.Count == 0)
                     {
                         set.AddImportPath(Directory.GetCurrentDirectory());
@@ -125,6 +159,34 @@ namespace protogen
                             }
                         }
                     }
+
+                    // add the library area for auto-imports (library inbuilts)
+                    set.AddImportPath(Path.GetDirectoryName(typeof(Program).Assembly.Location));
+                    
+                    if(inputFiles.Count == 1 && importPaths.Count == 1)
+                    {
+                        SearchOption? searchOption = null;
+                        if (inputFiles[0] == "**/*.proto"
+                            || inputFiles[0] == "**\\*.proto")
+                        {
+                            searchOption = SearchOption.AllDirectories;
+                            set.AllowNameOnlyImport = true;
+                        }
+                        else if (inputFiles[0] == "*.proto")
+                        {
+                            searchOption = SearchOption.TopDirectoryOnly;
+                        }
+
+                        if(searchOption != null)
+                        {
+                            inputFiles.Clear();
+                            var searchRoot = importPaths[0];
+                            foreach (var path in Directory.EnumerateFiles(importPaths[0], "*.proto", searchOption.Value))
+                            {
+                                inputFiles.Add(MakeRelativePath(searchRoot, path));
+                            }
+                        }
+                    }
                     
                     foreach (var input in inputFiles)
                     {
@@ -134,8 +196,8 @@ namespace protogen
                             exitCode = 1;
                         }
                     }
+                    
                     if(exitCode != 0) return exitCode;
-
                     set.Process();
                     var errors = set.GetErrors();
                     foreach(var err in errors)
@@ -152,16 +214,24 @@ namespace protogen
                             Serializer.Serialize(fds, set);
                         }
                     }
-                    else
+                    
+                    
+                    var files = codegen.Generate(set, options: options);
+                    foreach (var file in files)
                     {
-                        var files = codegen.Generate(set);
-                        foreach (var file in files)
+                        var path = Path.Combine(outPath, file.Name);
+
+                        var dir = Path.GetDirectoryName(path);
+                        if(!Directory.Exists(dir))
                         {
-                            var path = Path.Combine(outPath, file.Name);
-                            File.WriteAllText(path, file.Text);
-                            Console.WriteLine($"generated: {path}");
+                            Console.Error.WriteLine($"Output directory does not exist, creating... {dir}");
+                            Directory.CreateDirectory(dir);
                         }
+
+                        File.WriteAllText(path, file.Text);
+                        Console.WriteLine($"generated: {path}");
                     }
+
                     return 0;
                 }
             }
@@ -172,6 +242,41 @@ namespace protogen
                 return -1;
             }
         }
+
+        // with thanks to "Dave": https://stackoverflow.com/a/340454/23354
+        public static String MakeRelativePath(String fromPath, String toPath)
+        {
+#if NETCOREAPP2_0 || NETCOREAPP2_1
+            return Path.GetRelativePath(fromPath, toPath);
+#else
+            if (String.IsNullOrEmpty(fromPath)) throw new ArgumentNullException("fromPath");
+            if (String.IsNullOrEmpty(toPath)) throw new ArgumentNullException("toPath");
+
+            Uri fromUri = new Uri(fromPath, UriKind.RelativeOrAbsolute);
+            if (!fromUri.IsAbsoluteUri)
+            {
+                fromUri = new Uri(Path.Combine(Directory.GetCurrentDirectory(), fromPath));
+            }
+            Uri toUri = new Uri(toPath, UriKind.RelativeOrAbsolute);
+            if (!toUri.IsAbsoluteUri)
+            {
+                toUri = new Uri(Path.Combine(Directory.GetCurrentDirectory(), toPath));
+            }
+
+            if (fromUri.Scheme != toUri.Scheme) { return toPath; } // path can't be made relative.
+
+            Uri relativeUri = fromUri.MakeRelativeUri(toUri);
+            String relativePath = Uri.UnescapeDataString(relativeUri.ToString());
+
+            if (toUri.Scheme.Equals("file", StringComparison.OrdinalIgnoreCase))
+            {
+                relativePath = relativePath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+            }
+
+            return relativePath;
+#endif
+        }
+
         static string GetVersion<T>()
         {
 #if NETCOREAPP1_1
@@ -196,7 +301,22 @@ Parse PROTO_FILES and generate output based on the options given:
   -oFILE,                     Writes a FileDescriptorSet (a protocol buffer,
     --descriptor_set_out=FILE defined in descriptor.proto) containing all of
                               the input files to FILE.
-  --csharp_out=OUT_DIR        Generate C# source file.");
+  --csharp_out=OUT_DIR        Generate C# source file(s).
+  --vb_out=OUT_DIR            Generate VB source file(s).
+  +langver=VERSION            Request a specific language version from the
+                              selected code generator.
+  +names={auto|original}      Specify naming convention rules.
+  +oneof={default|enum}       Specify whether 'oneof' should generate enums.
+  +listset={yes|no}           Specify whether lists should emit setters
+  +OPTION=VALUE               Specify a custom OPTION/VALUE pair for the
+                              selected code generator.
+  --package=PACKAGE           Add a default package (when no package is
+                              specified); can use #FILE# and #DIR# tokens.
+
+Note that PROTO_FILES can be *.proto or **/*.proto (recursive) when a single
+import location is used, to process all schema files found. In recursive mode,
+imports from the current directory can also be specified by name-only.");
+
         }
     }
 }
