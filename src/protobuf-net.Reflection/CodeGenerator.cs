@@ -113,6 +113,11 @@ namespace ProtoBuf.Reflection
             => NullIfInherit(obj?.Options?.GetOptions()?.Access)
                 ?? NullIfInherit(GetAccess(obj?.Parent)) ?? Access.Public;
         /// <summary>
+        /// Obtain the access of an item, accounting for the model's hierarchy
+        /// </summary>
+        protected Access GetAccess(ServiceDescriptorProto obj)
+            => NullIfInherit(obj?.Options?.GetOptions()?.Access) ?? Access.Public;
+        /// <summary>
         /// Get the textual name of a given access level
         /// </summary>
         public virtual string GetAccess(Access access)
@@ -473,6 +478,7 @@ namespace ProtoBuf.Reflection
                     if (nn != null) nn = nn.Trim();
                     if (string.Equals(nn, "auto", StringComparison.OrdinalIgnoreCase)) nameNormalizer = NameNormalizer.Default;
                     else if (string.Equals(nn, "original", StringComparison.OrdinalIgnoreCase)) nameNormalizer = NameNormalizer.Null;
+                    else if (string.Equals(nn, "noplural", StringComparison.OrdinalIgnoreCase)) nameNormalizer = NameNormalizer.NoPlural;
                 }
 
                 string langver = null;
