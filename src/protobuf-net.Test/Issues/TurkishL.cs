@@ -1,13 +1,12 @@
 ﻿using System.IO;
 using System.Threading;
-using NUnit.Framework;
+using Xunit;
 
 namespace ProtoBuf.unittest.Attribs
 {
-    [TestFixture]
     public class TurkishL
     {
-        [Test]
+        [Fact]
         public void FakeTupleTest()
         {
 #if !COREFX
@@ -16,12 +15,10 @@ namespace ProtoBuf.unittest.Attribs
 #endif
             
             byte[] ser;
-            using (var ms = new MemoryStream())
-            {
-                var t = new ForTupleSerializer(123, "abc");
-                Serializer.Serialize(ms, t);
-                ser = ms.ToArray();
-            }
+            using var ms = new MemoryStream();
+            var t = new ForTupleSerializer(123, "abc");
+            Serializer.Serialize(ms, t);
+            ser = ms.ToArray();
         }
 
         public class ForTupleSerializer

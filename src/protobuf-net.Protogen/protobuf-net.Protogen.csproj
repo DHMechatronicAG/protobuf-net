@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>netcoreapp2.1</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
     <Configurations>Debug;Release;VS</Configurations>
     <PackAsTool>true</PackAsTool>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -14,11 +14,11 @@
     <Compile Include="..\protogen\**\*.cs" Exclude="..\protogen\obj\**\*" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../protobuf-net/protobuf-net.csproj" />
     <ProjectReference Include="../protobuf-net.Reflection/protobuf-net.Reflection.csproj" />
+    <ProjectReference Include="../protobuf-net/protobuf-net.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Update="Nerdbank.GitVersioning" Version="2.2.33">
+    <PackageReference Update="Nerdbank.GitVersioning" Version="3.1.91">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
