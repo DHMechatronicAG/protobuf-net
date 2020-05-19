@@ -1,9 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
     <LangVersion>14</LangVersion>
     <RootNamespace />
+    <NoWarn>IDE1006</NoWarn>
+    <IsTestProject>false</IsTestProject>
   </PropertyGroup>
   <!--
   9: ===3.5
@@ -18,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Update="Nerdbank.GitVersioning" Version="2.2.33">
+    <PackageReference Update="Nerdbank.GitVersioning" Version="3.1.91">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
