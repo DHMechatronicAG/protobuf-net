@@ -19,10 +19,10 @@
     <ProjectReference Include="../protobuf-net.Reflection/protobuf-net.Reflection.csproj" />
     <PackageReference Include="protobuf-net.Grpc.Reflection" Version="1.0.123" />
     <PackageReference Include="System.Collections.Immutable" Version="1.7.1" />
-    <PackageReference Include="protobuf-net.Grpc.Reflection" Version="1.0.110" Condition="'$(GrpcTools)'=='true'" />
-    <PackageReference Include="Grpc.Net.Client" Version="2.29.0" Condition="'$(GrpcTools)'=='true'" />
+    <PackageReference Include="protobuf-net.Grpc.Reflection" Version="1.0.123" Condition="'$(GrpcTools)'=='true'" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.30.0" Condition="'$(GrpcTools)'=='true'" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Update="Nerdbank.GitVersioning" Version="3.2.31" />
+    <PackageReference Update="Nerdbank.GitVersioning" Version="3.3.37" />
   </ItemGroup>
 </Project>

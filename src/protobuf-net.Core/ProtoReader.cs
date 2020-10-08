@@ -4,6 +4,7 @@ using ProtoBuf.Meta;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -137,7 +138,7 @@ namespace ProtoBuf
         {
             OnDispose();
             _model = null;
-            if (stringInterner != null)
+            if (stringInterner is object)
             {
                 stringInterner.Clear();
                 stringInterner = null;
@@ -224,9 +225,9 @@ namespace ProtoBuf
         private Dictionary<string, string> stringInterner;
         private protected string Intern(string value)
         {
-            if (value == null) return null;
+            if (value is null) return null;
             if (value.Length == 0) return "";
-            if (stringInterner == null)
+            if (stringInterner is null)
             {
                 stringInterner = new Dictionary<string, string>(StringComparer.Ordinal)
                 {
@@ -272,7 +273,7 @@ namespace ProtoBuf
         /// parsing the message in accordance with the model associated with the reader
         /// </summary>
         [MethodImpl(HotPath)]
-        public static object ReadObject(object value, Type type, ProtoReader reader)
+        public static object ReadObject(object value, [DynamicallyAccessedMembers(DynamicAccess.ContractType)] Type type, ProtoReader reader)
             => reader.DefaultState().ReadObject(value, type);
 
         /// <summary>
@@ -338,14 +339,12 @@ namespace ProtoBuf
         [MethodImpl(HotPath)]
         public void Hint(WireType wireType)
         {
-#pragma warning disable RCS1218 // Simplify code branching.
             if (WireType == wireType) { }  // fine; everything as we expect
             else if (((int)wireType & 7) == (int)this.WireType)
             {   // the underling type is a match; we're customising it with an extension
                 WireType = wireType;
             }
             // note no error here; we're OK about using alternative data
-#pragma warning restore RCS1218 // Simplify code branching.
         }
 
         /// <summary>
@@ -390,7 +389,7 @@ namespace ProtoBuf
 
         //static byte[] ReadBytes(Stream stream, int length)
         //{
-        //    if (stream == null) ThrowHelper.ThrowArgumentNullException("stream");
+        //    if (stream is null) ThrowHelper.ThrowArgumentNullException("stream");
         //    if (length < 0) ThrowHelper.ThrowArgumentOutOfRangeException("length");
         //    byte[] buffer = new byte[length];
         //    int offset = 0, read;
@@ -454,7 +453,7 @@ namespace ProtoBuf
         public static void DirectReadBytes(Stream source, byte[] buffer, int offset, int count)
         {
             int read;
-            if (source == null) ThrowHelper.ThrowArgumentNullException(nameof(source));
+            if (source is null) ThrowHelper.ThrowArgumentNullException(nameof(source));
             while (count > 0 && (read = source.Read(buffer, offset, count)) > 0)
             {
                 count -= read;
@@ -618,7 +617,7 @@ namespace ProtoBuf
                 source.Seek(count, SeekOrigin.Current);
                 count = 0;
             }
-            else if (buffer != null)
+            else if (buffer is object)
             {
                 int bytesRead;
                 while (count > buffer.Length && (bytesRead = source.Read(buffer, 0, buffer.Length)) > 0)
@@ -666,7 +665,7 @@ namespace ProtoBuf
         /// </summary>
         public static bool HasSubValue(ProtoBuf.WireType wireType, ProtoReader source)
         {
-            if (source == null) ThrowHelper.ThrowArgumentNullException(nameof(source));
+            if (source is null) ThrowHelper.ThrowArgumentNullException(nameof(source));
             // check for virtual end of stream
             if (source.blockEnd64 <= source._longPosition || wireType == WireType.EndGroup) { return false; }
             source.WireType = wireType;
@@ -702,7 +701,7 @@ namespace ProtoBuf
         /// </summary>
         public static void NoteObject(object value, ProtoReader reader)
         {
-            if (reader == null) ThrowHelper.ThrowArgumentNullException(nameof(reader));
+            if (reader is null) ThrowHelper.ThrowArgumentNullException(nameof(reader));
             if (reader.trapCount != 0)
             {
                 reader.netCache.RegisterTrappedObject(value);
@@ -735,10 +734,10 @@ namespace ProtoBuf
         /// </summary>
         public static object Merge(ProtoReader parent, object from, object to)
         {
-            if (parent == null) ThrowHelper.ThrowArgumentNullException(nameof(parent));
+            if (parent is null) ThrowHelper.ThrowArgumentNullException(nameof(parent));
             TypeModel model = parent.Model;
             var userState = parent.UserState;
-            if (model == null) ThrowHelper.ThrowInvalidOperationException("Types cannot be merged unless a type-model has been specified");
+            if (model is null) ThrowHelper.ThrowInvalidOperationException("Types cannot be merged unless a type-model has been specified");
             using var ms = new MemoryStream();
             var writeState = ProtoWriter.State.Create(ms, model, userState);
             try

@@ -16,6 +16,8 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 
+#pragma warning disable IDE0079 // sorry IDE, you're wrong
+
 namespace ProtoBuf.Meta
 {
     /// <summary>
@@ -202,26 +204,48 @@ namespace ProtoBuf.Meta
             var syntax = Serializer.GlobalOptions.Normalize(options.Syntax);
             var requiredTypes = new List<MetaType>();
             List<Type> inbuiltTypes = default;
+            HashSet<Type> forceGenerationTypes = null;
+            bool IsOutputForcedFor(Type type)
+                => forceGenerationTypes?.Contains(type) ?? false;
 
-            MetaType primaryType = null;
-
-            MetaType AddType(Type type)
+            string package = options.Package, origin = options.Origin;
+            var imports = new HashSet<string>(StringComparer.Ordinal);
+            MetaType AddType(Type type, bool forceOutput, bool inferPackageAndOrigin)
             {
+                if (forceOutput && type is object) (forceGenerationTypes ??= new HashSet<Type>()).Add(type);
                 // generate just relative to the supplied type
                 int index = FindOrAddAuto(type, false, false, false, DefaultCompatibilityLevel);
                 if (index < 0) throw new ArgumentException($"The type specified is not a contract-type: '{type.NormalizeName()}'", nameof(type));
 
                 // get the required types
                 var mt = ((MetaType)types[index]).GetSurrogateOrBaseOrSelf(false);
+                if (inferPackageAndOrigin)
+                {
+                    if (origin is null && !string.IsNullOrWhiteSpace(mt.Origin))
+                    {
+                        origin = mt.Origin;
+                    }
+                    string tmp;
+                    if (package is null && !string.IsNullOrWhiteSpace(tmp = mt.GuessPackage()))
+                    {
+                        package = tmp;
+                    }
+                }
                 AddMetaType(mt);
                 return mt;
             }
             void AddMetaType(MetaType toAdd)
             {
+                if (!string.IsNullOrWhiteSpace(toAdd.Origin) && toAdd.Origin != origin)
+                {
+                    imports.Add(toAdd.Origin);
+                    return; // external type; not our problem!
+                }
+
                 if (!requiredTypes.Contains(toAdd))
                 { // ^^^ note that the type might have been added as a descendent
                     requiredTypes.Add(toAdd);
-                    CascadeDependents(requiredTypes, toAdd);
+                    CascadeDependents(requiredTypes, toAdd, imports, origin);
                 }
             }
 
@@ -242,18 +266,16 @@ namespace ProtoBuf.Meta
                     {
                         Type effectiveType = Nullable.GetUnderlyingType(type) ?? type;
 
-                        var isInbuiltType = (ValueMember.TryGetCoreSerializer(this, DataFormat.Default, DefaultCompatibilityLevel, effectiveType, out var _, false, false, false, false) != null);
+                        var isInbuiltType = (ValueMember.TryGetCoreSerializer(this, DataFormat.Default, DefaultCompatibilityLevel, effectiveType, out var _, false, false, false, false) is object);
                         if (isInbuiltType)
                         {
                             (inbuiltTypes ??= new List<Type>()).Add(effectiveType);
                         }
                         else
                         {
-                            var mt = AddType(effectiveType);
-                            if (options.Types.Count == 1)
-                            {
-                                primaryType = mt;
-                            }
+                            bool isSingleInput = options.Types.Count == 1;
+                            var mt = AddType(effectiveType, isSingleInput, isSingleInput);
+                            
                         }
                     }
                 }
@@ -263,8 +285,8 @@ namespace ProtoBuf.Meta
                     {
                         foreach (var method in service.Methods)
                         {
-                            AddType(method.InputType);
-                            AddType(method.OutputType);
+                            AddType(method.InputType, true, false);
+                            AddType(method.OutputType, true, false);
                         }
                     }
                 }
@@ -272,20 +294,19 @@ namespace ProtoBuf.Meta
 
             // use the provided type's namespace for the "package"
             StringBuilder headerBuilder = new StringBuilder();
-            string package = options.Package;
 
             if (package is null)
             {
                 IEnumerable<MetaType> typesForNamespace = (options.HasTypes || options.HasServices) ? requiredTypes : types.Cast<MetaType>();
                 foreach (MetaType meta in typesForNamespace)
                 {
-                    if (TryGetRepeatedProvider(meta.Type) != null) continue;
+                    if (TryGetRepeatedProvider(meta.Type) is object) continue;
 
                     string tmp = meta.Type.Namespace;
                     if (!string.IsNullOrEmpty(tmp))
                     {
                         if (tmp.StartsWith("System.")) continue;
-                        if (package == null)
+                        if (package is null)
                         { // haven't seen any suggestions yet
                             package = tmp;
                         }
@@ -324,7 +345,6 @@ namespace ProtoBuf.Meta
                 _ = mt.Serializer; // force errors to happen if there's problems
             }
 
-            var imports = CommonImports.None;
             StringBuilder bodyBuilder = new StringBuilder();
             // sort them by schema-name
             var callstack = new HashSet<Type>(); // for recursion detection
@@ -338,7 +358,7 @@ namespace ProtoBuf.Meta
                 foreach (var type in inbuiltTypes)
                 {
                     bodyBuilder.AppendLine().Append("message ").Append(type.Name).Append(" {");
-                    MetaType.NewLine(bodyBuilder, 1).Append(syntax == ProtoSyntax.Proto2 ? "optional " : "").Append(GetSchemaTypeName(callstack, type, DataFormat.Default, DefaultCompatibilityLevel, false, false, ref imports))
+                    MetaType.NewLine(bodyBuilder, 1).Append(syntax == ProtoSyntax.Proto2 ? "optional " : "").Append(GetSchemaTypeName(callstack, type, DataFormat.Default, DefaultCompatibilityLevel, false, false, imports))
                         .Append(" value = 1;").AppendLine().Append('}');
                 }
             }
@@ -349,8 +369,8 @@ namespace ProtoBuf.Meta
                 {
                     continue; // not our concern
                 }
-                if (tmp != primaryType && TryGetRepeatedProvider(tmp.Type) != null) continue;
-                tmp.WriteSchema(callstack, bodyBuilder, 0, ref imports, syntax, package, options.Flags);
+                if (!IsOutputForcedFor(tmp.Type) && TryGetRepeatedProvider(tmp.Type) is object) continue;
+                tmp.WriteSchema(callstack, bodyBuilder, 0, imports, syntax, package, options.Flags);
             }
 
             // write the services
@@ -361,8 +381,8 @@ namespace ProtoBuf.Meta
                     MetaType.NewLine(bodyBuilder, 0).Append("service ").Append(service.Name).Append(" {");
                     foreach (var method in service.Methods)
                     {
-                        var inputName = GetSchemaTypeName(callstack, method.InputType, DataFormat.Default, DefaultCompatibilityLevel, false, false, ref imports);
-                        var replyName = GetSchemaTypeName(callstack, method.OutputType, DataFormat.Default, DefaultCompatibilityLevel, false, false, ref imports);
+                        var inputName = GetSchemaTypeName(callstack, method.InputType, DataFormat.Default, DefaultCompatibilityLevel, false, false, imports);
+                        var replyName = GetSchemaTypeName(callstack, method.OutputType, DataFormat.Default, DefaultCompatibilityLevel, false, false, imports);
                         MetaType.NewLine(bodyBuilder, 1).Append("rpc ").Append(method.Name).Append(" (")
                             .Append(method.ClientStreaming ? "stream " : "")
                             .Append(inputName).Append(") returns (")
@@ -373,77 +393,72 @@ namespace ProtoBuf.Meta
                 }
             }
 
-
-            if ((imports & CommonImports.Bcl) != 0)
+            foreach (var import in imports.OrderBy(_ => _))
             {
-                headerBuilder.Append("import \"protobuf-net/bcl.proto\"; // schema for protobuf-net's handling of core .NET types").AppendLine();
-            }
-            if ((imports & CommonImports.Protogen) != 0)
-            {
-                headerBuilder.Append("import \"protobuf-net/protogen.proto\"; // custom protobuf-net options").AppendLine();
-            }
-            if ((imports & CommonImports.Timestamp) != 0)
-            {
-                headerBuilder.Append("import \"google/protobuf/timestamp.proto\";").AppendLine();
-            }
-            if ((imports & CommonImports.Duration) != 0)
-            {
-                headerBuilder.Append("import \"google/protobuf/duration.proto\";").AppendLine();
-            }
-            if ((imports & CommonImports.Empty) != 0)
-            {
-                headerBuilder.Append("import \"google/protobuf/empty.proto\";").AppendLine();
+                if (!string.IsNullOrWhiteSpace(import))
+                {
+                    headerBuilder.Append("import \"").Append(import).Append("\";");
+                    switch (import)
+                    {
+                        case CommonImports.Bcl:
+                            headerBuilder.Append(" // schema for protobuf-net's handling of core .NET types");
+                            break;
+                        case CommonImports.Protogen:
+                            headerBuilder.Append(" // custom protobuf-net options");
+                            break;
+                    }
+                    headerBuilder.AppendLine();
+                }
             }
             return headerBuilder.Append(bodyBuilder).AppendLine().ToString();
         }
 
-        [Flags]
-        internal enum CommonImports
+        internal static class CommonImports
         {
-            None = 0,
-            Bcl = 1 << 0,
-            Timestamp = 1 << 1,
-            Duration = 1 << 2,
-            Protogen = 1 << 3,
-            Empty = 1 << 4,
+            public const string
+                Bcl = "protobuf-net/bcl.proto",
+                Timestamp = "google/protobuf/timestamp.proto",
+                Duration = "google/protobuf/duration.proto",
+                Protogen = "protobuf-net/protogen.proto",
+                Empty = "google/protobuf/empty.proto";
         }
 
-        private void CascadeRepeated(List<MetaType> list, RepeatedSerializerStub provider, CompatibilityLevel ambient, DataFormat keyFormat)
+        private void CascadeRepeated(List<MetaType> list, RepeatedSerializerStub provider, CompatibilityLevel ambient, DataFormat keyFormat, HashSet<string> imports, string origin)
         {
             if (provider.IsMap)
             {
                 provider.ResolveMapTypes(out var key, out var value);
-                TryGetCoreSerializer(list, key, ambient);
-                TryGetCoreSerializer(list, value, ambient);
+                TryGetCoreSerializer(list, key, ambient, imports, origin);
+                TryGetCoreSerializer(list, value, ambient, imports, origin);
 
                 if (!provider.IsValidProtobufMap(this, ambient, keyFormat)) // add the KVP
-                    TryGetCoreSerializer(list, provider.ItemType, ambient);
+                    TryGetCoreSerializer(list, provider.ItemType, ambient, imports, origin);
             }
             else
             {
-                TryGetCoreSerializer(list, provider.ItemType, ambient);
+                TryGetCoreSerializer(list, provider.ItemType, ambient, imports, origin);
             }
         }
-        private void CascadeDependents(List<MetaType> list, MetaType metaType)
+        private void CascadeDependents(List<MetaType> list, MetaType metaType, HashSet<string> imports, string origin)
         {
             MetaType tmp;
             var repeated = TryGetRepeatedProvider(metaType.Type);
-            if (repeated != null)
+            if (repeated is object)
             {
-                CascadeRepeated(list, repeated, metaType.CompatibilityLevel, DataFormat.Default);
+                CascadeRepeated(list, repeated, metaType.CompatibilityLevel, DataFormat.Default, imports, origin);
             }
             else
             {
                 if (metaType.IsAutoTuple)
                 {
-                    if (MetaType.ResolveTupleConstructor(metaType.Type, out var mapping) != null)
+                    if (MetaType.ResolveTupleConstructor(metaType.Type, out var mapping) is object)
                     {
                         for (int i = 0; i < mapping.Length; i++)
                         {
                             Type type = null;
                             if (mapping[i] is PropertyInfo propertyInfo) type = propertyInfo.PropertyType;
                             else if (mapping[i] is FieldInfo fieldInfo) type = fieldInfo.FieldType;
-                            TryGetCoreSerializer(list, type, metaType.CompatibilityLevel);
+                            TryGetCoreSerializer(list, type, metaType.CompatibilityLevel, imports, origin);
                         }
                     }
                 }
@@ -452,28 +467,28 @@ namespace ProtoBuf.Meta
                     foreach (ValueMember member in metaType.Fields)
                     {
                         repeated = TryGetRepeatedProvider(member.MemberType);
-                        if (repeated != null)
+                        if (repeated is object)
                         {
-                            CascadeRepeated(list, repeated, member.CompatibilityLevel, member.MapKeyFormat);
+                            CascadeRepeated(list, repeated, member.CompatibilityLevel, member.MapKeyFormat, imports, origin);
                             if (repeated.IsMap && !member.IsMap) // include the KVP, then
-                                TryGetCoreSerializer(list, repeated.ItemType, member.CompatibilityLevel);
+                                TryGetCoreSerializer(list, repeated.ItemType, member.CompatibilityLevel, imports, origin);
                         }
                         else
                         {
-                            TryGetCoreSerializer(list, member.MemberType, member.CompatibilityLevel);
+                            TryGetCoreSerializer(list, member.MemberType, member.CompatibilityLevel, imports, origin);
                         }
                     }
                 }
                 foreach (var genericArgument in metaType.GetAllGenericArguments())
                 {
                     repeated = TryGetRepeatedProvider(genericArgument);
-                    if (repeated != null)
+                    if (repeated is object)
                     {
-                        CascadeRepeated(list, repeated, metaType.CompatibilityLevel, DataFormat.Default);
+                        CascadeRepeated(list, repeated, metaType.CompatibilityLevel, DataFormat.Default, imports, origin);
                     }
                     else
                     {
-                        TryGetCoreSerializer(list, genericArgument, metaType.CompatibilityLevel);
+                        TryGetCoreSerializer(list, genericArgument, metaType.CompatibilityLevel, imports, origin);
                     }
                 }
                 if (metaType.HasSubtypes)
@@ -484,24 +499,24 @@ namespace ProtoBuf.Meta
                         if (!list.Contains(tmp))
                         {
                             list.Add(tmp);
-                            CascadeDependents(list, tmp);
+                            CascadeDependents(list, tmp, imports, origin);
                         }
                     }
                 }
                 tmp = metaType.BaseType;
-                if (tmp != null) tmp = tmp.GetSurrogateOrSelf(); // note: already walking base-types; exclude base
-                if (tmp != null && !list.Contains(tmp))
+                if (tmp is object) tmp = tmp.GetSurrogateOrSelf(); // note: already walking base-types; exclude base
+                if (tmp is object && !list.Contains(tmp))
                 {
                     list.Add(tmp);
-                    CascadeDependents(list, tmp);
+                    CascadeDependents(list, tmp, imports, origin);
                 }
             }
         }
 
-        private void TryGetCoreSerializer(List<MetaType> list, Type itemType, CompatibilityLevel ambient)
+        private void TryGetCoreSerializer(List<MetaType> list, Type itemType, CompatibilityLevel ambient, HashSet<string> imports, string origin)
         {
             var coreSerializer = ValueMember.TryGetCoreSerializer(this, DataFormat.Default, CompatibilityLevel.NotSpecified, itemType, out _, false, false, false, false);
-            if (coreSerializer != null)
+            if (coreSerializer is object)
             {
                 return;
             }
@@ -510,14 +525,29 @@ namespace ProtoBuf.Meta
             {
                 return;
             }
-            var temp = ((MetaType)types[index]).GetSurrogateOrBaseOrSelf(false);
+
+            var mt = (MetaType)types[index];
+            if (mt.HasSurrogate)
+            {
+                coreSerializer = ValueMember.TryGetCoreSerializer(this, mt.surrogateDataFormat, mt.CompatibilityLevel, mt.surrogateType, out _, false, false, false, false);
+                if (coreSerializer is object)
+                {   // inbuilt basic surrogate
+                    return;
+                }
+            }
+            var temp = mt.GetSurrogateOrBaseOrSelf(false);
+            if (!string.IsNullOrWhiteSpace(temp.Origin) && temp.Origin != origin)
+            {
+                imports.Add(temp.Origin);
+                return; // external type; not our problem!
+            }
             if (list.Contains(temp))
             {
                 return;
             }
             // could perhaps also implement as a queue, but this should work OK for sane models
             list.Add(temp);
-            CascadeDependents(list, temp);
+            CascadeDependents(list, temp, imports, origin);
         }
 
         internal RuntimeTypeModel(bool isDefault, string name)
@@ -638,7 +668,7 @@ namespace ProtoBuf.Meta
                     ? ValueMember.TryGetCoreSerializer(this, DataFormat.Default, CompatibilityLevel.NotSpecified, type, out _, false, false, false, false)
                     : null;
 
-                if (ser != null) basicTypes.Add(new BasicType(type, ser));
+                if (ser is object) basicTypes.Add(new BasicType(type, ser));
                 return ser;
             }
         }
@@ -663,7 +693,7 @@ namespace ProtoBuf.Meta
             // the fast fail path: types that will never have a meta-type
             bool shouldAdd = AutoAddMissingTypes || addEvenIfAutoDisabled;
 
-            if (!type.IsEnum && TryGetBasicTypeSerializer(type) != null)
+            if (!type.IsEnum && TryGetBasicTypeSerializer(type) is object)
             {
                 if (shouldAdd && !addWithContractOnly) throw MetaType.InbuiltType(type);
                 return -1; // this will never be a meta-type
@@ -679,7 +709,7 @@ namespace ProtoBuf.Meta
                 {
                     TakeLock(ref opaqueToken);
                     // try to recognise a few familiar patterns...
-                    if ((metaType = RecogniseCommonTypes(type)) == null)
+                    if ((metaType = RecogniseCommonTypes(type)) is null)
                     { // otherwise, check if it is a contract
                         MetaType.AttributeFamily family = MetaType.GetContractFamily(this, type, null);
                         if (family == MetaType.AttributeFamily.AutoTuple)
@@ -804,12 +834,12 @@ namespace ProtoBuf.Meta
         /// further configuration.</returns>
         public MetaType Add(Type type, bool applyDefaultBehaviour = true, CompatibilityLevel compatibilityLevel = default)
         {
-            if (type == null) throw new ArgumentNullException(nameof(type));
+            if (type is null) throw new ArgumentNullException(nameof(type));
             if (type == typeof(object))
                 throw new ArgumentException("You cannot reconfigure " + type.FullName);
             type = DynamicStub.GetEffectiveType(type);
             MetaType newType = FindWithoutAdd(type);
-            if (newType != null)
+            if (newType is object)
             {
                 if (compatibilityLevel != default)
                 {
@@ -822,7 +852,7 @@ namespace ProtoBuf.Meta
             try
             {
                 newType = RecogniseCommonTypes(type);
-                if (newType != null)
+                if (newType is object)
                 {
                     if (!applyDefaultBehaviour)
                     {
@@ -833,12 +863,12 @@ namespace ProtoBuf.Meta
                     // we should assume that type is fully configured, though; no need to re-run:
                     applyDefaultBehaviour = false;
                 }
-                if (newType == null) newType = Create(type);
+                if (newType is null) newType = Create(type);
                 newType.CompatibilityLevel = compatibilityLevel; // usually this will be setting it to "unspecified", which is fine
                 newType.Pending = true;
                 TakeLock(ref opaqueToken);
                 // double checked
-                if (FindWithoutAdd(type) != null) throw new ArgumentException("Duplicate type", nameof(type));
+                if (FindWithoutAdd(type) is object) throw new ArgumentException("Duplicate type", nameof(type));
                 ThrowIfFrozen();
                 types.Add(newType);
                 if (applyDefaultBehaviour) { newType.ApplyDefaultBehaviour(default); }
@@ -873,9 +903,9 @@ namespace ProtoBuf.Meta
         private static void OnApplyDefaultBehaviour(
             EventHandler<TypeAddedEventArgs> handler, MetaType metaType, ref TypeAddedEventArgs args)
         {
-            if (handler != null)
+            if (handler is object)
             {
-                if (args == null) args = new TypeAddedEventArgs(metaType);
+                if (args is null) args = new TypeAddedEventArgs(metaType);
                 handler(metaType.Model, args);
             }
         }
@@ -945,7 +975,7 @@ namespace ProtoBuf.Meta
         private readonly Hashtable _serviceCache = new Hashtable();
         internal void ResetServiceCache(Type type)
         {
-            if (type != null)
+            if (type is object)
             {
                 lock (_serviceCache)
                 {
@@ -956,15 +986,15 @@ namespace ProtoBuf.Meta
 
         private object GetServicesSlow(Type type, CompatibilityLevel ambient)
         {
-            if (type == null) return null; // GIGO
+            if (type is null) return null; // GIGO
             object service;
             lock (_serviceCache)
             {   // once more, with feeling
                 service = _serviceCache[type];
-                if (service != null) return service;
+                if (service is object) return service;
             }
-            service = GetServicesImpl();
-            if (service != null)
+            service = GetServicesImpl(this, type, ambient);
+            if (service is object)
             {
                 try
                 {
@@ -978,18 +1008,25 @@ namespace ProtoBuf.Meta
             }
             return service;
 
-            object GetServicesImpl()
+            static object GetServicesImpl(RuntimeTypeModel model, Type type, CompatibilityLevel ambient)
             {
                 if (type.IsEnum) return EnumSerializers.GetSerializer(type);
 
-                // rule out repeated (this has an internal cache etc)
-                var repeated = TryGetRepeatedProvider(type); // this handles ignores, etc
-                if (repeated != null) return repeated.Serializer;
+                var nt = Nullable.GetUnderlyingType(type);
+                if (nt is object)
+                {
+                    // rely on the fact that we always do double-duty with nullables
+                    return model.GetServicesSlow(nt, ambient);
+                }
 
-                int typeIndex = FindOrAddAuto(type, false, true, false, ambient);
+                // rule out repeated (this has an internal cache etc)
+                var repeated = model.TryGetRepeatedProvider(type); // this handles ignores, etc
+                if (repeated is object) return repeated.Serializer;
+
+                int typeIndex = model.FindOrAddAuto(type, false, true, false, ambient);
                 if (typeIndex >= 0)
                 {
-                    var mt = (MetaType)types[typeIndex];
+                    var mt = (MetaType)model.types[typeIndex];
                     var serializer = mt.Serializer;
                     if (serializer is IExternalSerializer external)
                     {
@@ -1011,7 +1048,7 @@ namespace ProtoBuf.Meta
         // this is used by some unit-tests; do not remove
         internal Compiler.ProtoSerializer<TActual> GetSerializer<TActual>(IRuntimeProtoSerializerNode serializer, bool compiled)
         {
-            if (serializer == null) throw new ArgumentNullException(nameof(serializer));
+            if (serializer is null) throw new ArgumentNullException(nameof(serializer));
 
             if (compiled) return Compiler.CompilerContext.BuildSerializer<TActual>(Scope, serializer, this);
 
@@ -1042,7 +1079,7 @@ namespace ProtoBuf.Meta
                 // the primary purpose of this is to force the creation of the Serializer
                 MetaType mt = (MetaType)types[i];
 
-                if (GetServicesSlow(mt.Type, mt.CompatibilityLevel) == null) // respects enums, repeated, etc
+                if (GetServicesSlow(mt.Type, mt.CompatibilityLevel) is null) // respects enums, repeated, etc
                     throw new InvalidOperationException("No serializer available for " + mt.Type.NormalizeName());
             }
         }
@@ -1051,7 +1088,7 @@ namespace ProtoBuf.Meta
         {
             int IComparable.CompareTo(object obj)
             {
-                if (obj == null) throw new ArgumentException("obj");
+                if (obj is null) throw new ArgumentException("obj");
                 SerializerPair other = (SerializerPair)obj;
 
                 // we want to bunch all the items with the same base-type together, but we need the items with a
@@ -1106,7 +1143,7 @@ namespace ProtoBuf.Meta
             try
             {
                 baseMethod = type.BaseType.GetMethod(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                if (baseMethod == null)
+                if (baseMethod is null)
                     throw new ArgumentException($"Unable to resolve '{name}'");
             }
             catch (Exception ex)
@@ -1150,7 +1187,7 @@ namespace ProtoBuf.Meta
             /// </summary>
             public void SetFrameworkOptions(MetaType from)
             {
-                if (from == null) throw new ArgumentNullException(nameof(from));
+                if (from is null) throw new ArgumentNullException(nameof(from));
                 AttributeMap[] attribs = AttributeMap.Create(from.Type.Assembly);
                 foreach (AttributeMap attrib in attribs)
                 {
@@ -1272,7 +1309,7 @@ namespace ProtoBuf.Meta
             }
 
             string assemblyName, moduleName;
-            if (path == null)
+            if (path is null)
             {
                 assemblyName = typeName;
                 moduleName = assemblyName + ".dll";
@@ -1300,6 +1337,8 @@ namespace ProtoBuf.Meta
 
 
             var serviceType = WriteBasicTypeModel("<Services>" + typeName, module, typeof(object), true);
+            // note: the service could benefit from [DynamicallyAccessedMembers(DynamicAccess.Serializer)], but: that only exists
+            // (on the public API) in net5+, and those platforms don't allow full dll emit (which is when the linker matters)
             WriteSerializers(scope, serviceType);
             WriteEnumsAndProxies(serviceType);
 
@@ -1371,14 +1410,22 @@ namespace ProtoBuf.Meta
                     var member = EnumSerializers.GetProvider(runtimeType);
                     AddProxy(type, runtimeType, member, true);
                 }
-                else if (metaType.SerializerType != null)
+                else if (ShouldEmitCustomSerializerProxy(metaType.SerializerType))
                 {
                     AddProxy(type, runtimeType, metaType.SerializerType, false);
                 }
-                else if ((repeated = TryGetRepeatedProvider(runtimeType)) != null)
+                else if ((repeated = TryGetRepeatedProvider(runtimeType)) is object)
                 {
                     AddProxy(type, runtimeType, repeated.Provider, false);
                 }
+            }
+            static bool ShouldEmitCustomSerializerProxy(Type serializerType)
+            {
+                if (serializerType is null) return false; // nothing to do
+                if (IsFullyPublic(serializerType)) return true; // fine, just do it
+
+                // so: non-public; don't emit for anything inbuilt
+                return serializerType.Assembly != typeof(PrimaryTypeProvider).Assembly;
             }
         }
 
@@ -1390,7 +1437,7 @@ namespace ProtoBuf.Meta
                     provider = property.GetGetMethod(true);
                     break;
                 // types are really a short-hand for the singleton API
-                case Type type when type.IsClass && !type.IsAbstract && type.GetConstructor(Type.EmptyTypes) != null:
+                case Type type when type.IsClass && !type.IsAbstract && type.GetConstructor(Type.EmptyTypes) is object:
                     provider = typeof(SerializerCache).GetMethod(nameof(SerializerCache.Get), BindingFlags.Public | BindingFlags.Static)
                         .MakeGenericMethod(type, forType);
                     break;
@@ -1417,10 +1464,10 @@ namespace ProtoBuf.Meta
 
         internal RepeatedSerializerStub TryGetRepeatedProvider(Type type, CompatibilityLevel ambient = default)
         {
-            if (type == null) return null;
+            if (type is null) return null;
             var repeated = RepeatedSerializers.TryGetRepeatedProvider(type);
             // but take it back if it is explicitly excluded
-            if (repeated != null)
+            if (repeated is object)
             { // looks like a list, but double check for IgnoreListHandling
                 int idx = this.FindOrAddAuto(type, false, true, false, ambient);
                 if (idx >= 0 && ((MetaType)types[idx]).IgnoreListHandling)
@@ -1434,7 +1481,7 @@ namespace ProtoBuf.Meta
         private void AddProxy(TypeBuilder building, Type proxying, MemberInfo provider, bool includeNullable)
         {
             provider = GetUnderlyingProvider(provider, proxying);
-            if (provider != null)
+            if (provider is object)
             {
                 var iType = typeof(ISerializerProxy<>).MakeGenericType(proxying);
                 building.AddInterfaceImplementation(iType);
@@ -1480,7 +1527,7 @@ namespace ProtoBuf.Meta
                 var runtimeType = metaType.Type;
 
                 metaType.Validate();
-                if (runtimeType.IsEnum || metaType.SerializerType is object || TryGetRepeatedProvider(metaType.Type) != null)
+                if (runtimeType.IsEnum || metaType.SerializerType is object || TryGetRepeatedProvider(metaType.Type) is object)
                 {   // we don't implement these
                     continue;
                 }
@@ -1581,7 +1628,7 @@ namespace ProtoBuf.Meta
                     versionAttribType = TypeModel.ResolveKnownType("System.Runtime.Versioning.TargetFrameworkAttribute", typeof(string).Assembly);
                 }
                 catch { /* don't stress */ }
-                if (versionAttribType != null)
+                if (versionAttribType is object)
                 {
                     PropertyInfo[] props;
                     object[] propValues;
@@ -1613,7 +1660,7 @@ namespace ProtoBuf.Meta
             }
             catch { /* best endeavors only */ }
 
-            if (internalsVisibleToAttribType != null)
+            if (internalsVisibleToAttribType is object)
             {
                 List<string> internalAssemblies = new List<string>();
                 List<Assembly> consideredAssemblies = new List<Assembly>();
@@ -1648,7 +1695,7 @@ namespace ProtoBuf.Meta
         internal bool IsPrepared(Type type)
         {
             MetaType meta = FindWithoutAdd(type);
-            return meta != null && meta.IsPrepared();
+            return meta is object && meta.IsPrepared();
         }
 
         private int metadataTimeoutMilliseconds = 5000;
@@ -1711,7 +1758,7 @@ namespace ProtoBuf.Meta
                 if (opaqueToken != GetContention()) // contention-count changes since we looked!
                 {
                     LockContentedEventHandler handler = LockContended;
-                    if (handler != null)
+                    if (handler is object)
                     {
                         // not hugely elegant, but this is such a far-corner-case that it doesn't need to be slick - I'll settle for cross-platform
                         string stackTrace;
@@ -1738,50 +1785,73 @@ namespace ProtoBuf.Meta
         public event LockContentedEventHandler LockContended;
 #pragma warning restore RCS1159 // Use EventHandler<T>.
 
-        internal string GetSchemaTypeName(HashSet<Type> callstack, Type effectiveType, DataFormat dataFormat, CompatibilityLevel compatibilityLevel, bool asReference, bool dynamicType, ref CommonImports imports)
-            => GetSchemaTypeName(callstack, effectiveType, dataFormat, compatibilityLevel, asReference, dynamicType, ref imports, out _);
-        internal string GetSchemaTypeName(HashSet<Type> callstack, Type effectiveType, DataFormat dataFormat, CompatibilityLevel compatibilityLevel, bool asReference, bool dynamicType, ref CommonImports imports, out string altName)
+        internal string GetSchemaTypeName(HashSet<Type> callstack, Type effectiveType, DataFormat dataFormat, CompatibilityLevel compatibilityLevel, bool asReference, bool dynamicType, HashSet<string> imports)
+            => GetSchemaTypeName(callstack, effectiveType, dataFormat, compatibilityLevel, asReference, dynamicType, imports, out _);
+
+        static bool IsWellKnownType(Type type, out string name, HashSet<string> imports)
+        {
+            if (type == typeof(byte[]))
+            {
+                name = "bytes";
+                return true;
+            }
+            else if (type == typeof(Timestamp))
+            {
+                imports.Add(CommonImports.Timestamp);
+                name = ".google.protobuf.Timestamp";
+                return true;
+            }
+            else if (type == typeof(Duration))
+            {
+                imports.Add(CommonImports.Duration);
+                name = ".google.protobuf.Duration";
+                return true;
+            }
+            else if (type == typeof(Empty))
+            {
+                imports.Add(CommonImports.Empty);
+                name = ".google.protobuf.Empty";
+                return true;
+            }
+            name = default;
+            return false;
+        }
+        internal string GetSchemaTypeName(HashSet<Type> callstack, Type effectiveType, DataFormat dataFormat, CompatibilityLevel compatibilityLevel, bool asReference, bool dynamicType, HashSet<string> imports, out string altName)
         {
             altName = null;
             compatibilityLevel = ValueMember.GetEffectiveCompatibilityLevel(compatibilityLevel, dataFormat);
             effectiveType = DynamicStub.GetEffectiveType(effectiveType);
 
-            if (effectiveType == typeof(byte[]))
+            if (IsWellKnownType(effectiveType, out var wellKnownName, imports))
             {
-                return "bytes";
-            }
-            else if (effectiveType == typeof(Timestamp))
-            {
-                imports |= CommonImports.Timestamp;
-                return ".google.protobuf.Timestamp";
-            }
-            else if (effectiveType == typeof(Duration))
-            {
-                imports |= CommonImports.Duration;
-                return ".google.protobuf.Duration";
-            }
-            else if (effectiveType == typeof(Empty))
-            {
-                imports |= CommonImports.Empty;
-                return ".google.protobuf.Empty";
+                return wellKnownName;
             }
 
-            IRuntimeProtoSerializerNode ser = ValueMember.TryGetCoreSerializer(this, dataFormat, compatibilityLevel, effectiveType, out var _, false, false, false, false);
-            if (ser == null)
+            IRuntimeProtoSerializerNode ser = ValueMember.TryGetCoreSerializer(this, dataFormat, compatibilityLevel, effectiveType, out _, false, false, false, false);
+            if (ser is null)
             {   // model type
                 if (asReference || dynamicType)
                 {
-                    imports |= CommonImports.Bcl;
+                    imports.Add(CommonImports.Bcl);
                     return ".bcl.NetObjectProxy";
                 }
 
                 var mt = this[effectiveType];
+                if (mt.HasSurrogate && ValueMember.TryGetCoreSerializer(this, mt.surrogateDataFormat, mt.CompatibilityLevel, mt.surrogateType, out _, false, false, false ,false) is object)
+                {   // inbuilt basic surrogate
+                    return GetSchemaTypeName(callstack, mt.surrogateType, mt.surrogateDataFormat, mt.CompatibilityLevel, false, false, imports);
+                }
+                var actualMeta = mt.GetSurrogateOrBaseOrSelf(true);
+                if (IsWellKnownType(actualMeta.Type, out wellKnownName, imports))
+                {
+                    return wellKnownName;
+                }
+                var actual = actualMeta.GetSchemaTypeName(callstack);
 
-                var actual = mt.GetSurrogateOrBaseOrSelf(true).GetSchemaTypeName(callstack);
                 if (mt.Type.IsEnum && !mt.IsValidEnum())
                 {
                     altName = actual;
-                    actual = GetSchemaTypeName(callstack, Enum.GetUnderlyingType(mt.Type), dataFormat, CompatibilityLevel.NotSpecified, asReference, dynamicType, ref imports);
+                    actual = GetSchemaTypeName(callstack, Enum.GetUnderlyingType(mt.Type), dataFormat, CompatibilityLevel.NotSpecified, asReference, dynamicType, imports);
                 }
                 return actual;
             }
@@ -1789,7 +1859,7 @@ namespace ProtoBuf.Meta
             {
                 if (ser is ParseableSerializer)
                 {
-                    if (asReference) imports |= CommonImports.Bcl;
+                    if (asReference) imports.Add(CommonImports.Bcl);
                     return asReference ? ".bcl.NetObjectProxy" : "string";
                 }
 
@@ -1799,7 +1869,7 @@ namespace ProtoBuf.Meta
                     case ProtoTypeCode.Single: return "float";
                     case ProtoTypeCode.Double: return "double";
                     case ProtoTypeCode.String:
-                        if (asReference) imports |= CommonImports.Bcl;
+                        if (asReference) imports.Add(CommonImports.Bcl);
                         return asReference ? ".bcl.NetObjectProxy" : "string";
                     case ProtoTypeCode.Byte:
                     case ProtoTypeCode.Char:
@@ -1839,12 +1909,12 @@ namespace ProtoBuf.Meta
                             default:
                                 if (compatibilityLevel >= CompatibilityLevel.Level240)
                                 {
-                                    imports |= CommonImports.Timestamp;
+                                    imports.Add(CommonImports.Timestamp);
                                     return ".google.protobuf.Timestamp";
                                 }
                                 else
                                 {
-                                    imports |= CommonImports.Bcl;
+                                    imports.Add(CommonImports.Bcl);
                                     return ".bcl.DateTime";
                                 }
                         }
@@ -1855,26 +1925,26 @@ namespace ProtoBuf.Meta
                             default:
                                 if (compatibilityLevel >= CompatibilityLevel.Level240)
                                 {
-                                    imports |= CommonImports.Duration;
+                                    imports.Add(CommonImports.Duration);
                                     return ".google.protobuf.Duration";
                                 }
                                 else
                                 {
-                                    imports |= CommonImports.Bcl;
+                                    imports.Add(CommonImports.Bcl);
                                     return ".bcl.TimeSpan";
                                 }
                         }
                     case ProtoTypeCode.Decimal:
                         if (compatibilityLevel < CompatibilityLevel.Level300)
                         {
-                            imports |= CommonImports.Bcl;
+                            imports.Add(CommonImports.Bcl);
                             return ".bcl.Decimal";
                         }
                         return "string";
                     case ProtoTypeCode.Guid:
                         if (compatibilityLevel < CompatibilityLevel.Level300)
                         {
-                            imports |= CommonImports.Bcl;
+                            imports.Add(CommonImports.Bcl);
                             return ".bcl.Guid";
                         }
                         return dataFormat == DataFormat.FixedSize ? "bytes" : "string";
@@ -1896,11 +1966,11 @@ namespace ProtoBuf.Meta
 
         internal void VerifyFactory(MethodInfo factory, Type type)
         {
-            if (factory != null)
+            if (factory is object)
             {
-                if (type != null && type.IsValueType) throw new InvalidOperationException();
+                if (type is object && type.IsValueType) throw new InvalidOperationException();
                 if (!factory.IsStatic) throw new ArgumentException("A factory-method must be static", nameof(factory));
-                if (type != null && factory.ReturnType != type && factory.ReturnType != typeof(object)) throw new ArgumentException("The factory-method must return object" + (type == null ? "" : (" or " + type.FullName)), nameof(factory));
+                if (type is object && factory.ReturnType != type && factory.ReturnType != typeof(object)) throw new ArgumentException("The factory-method must return object" + (type is null ? "" : (" or " + type.FullName)), nameof(factory));
 
                 if (!CallbackSet.CheckCallbackParameters(factory)) throw new ArgumentException("Invalid factory signature in " + factory.DeclaringType.FullName + "." + factory.Name, nameof(factory));
             }
@@ -1925,7 +1995,7 @@ namespace ProtoBuf.Meta
         internal static bool IsFullyPublic(Type type, out Type cause)
         {
             Type originalType = type;
-            while (type != null)
+            while (type is object)
             {
                 if (type.IsGenericType)
                 {
@@ -2004,7 +2074,7 @@ namespace ProtoBuf.Meta
                     if (!ReferenceEquals(this, currentDefault))
                         SetOption(RuntimeTypeModelOptions.IsDefaultModel, false);
 
-                    if (oldModel != null && !ReferenceEquals(oldModel, currentDefault))
+                    if (oldModel is object && !ReferenceEquals(oldModel, currentDefault))
                         oldModel.SetOption(RuntimeTypeModelOptions.IsDefaultModel, false);
                 }
             }
@@ -2035,6 +2105,47 @@ namespace ProtoBuf.Meta
                     SetDefaultModel(model);
                 }
                 return model;
+            }
+        }
+
+        /// <summary>
+        /// Treat all values of <typeparamref name="TUnderlying"/> (non-serializable)
+        /// as though they were the surrogate <typeparamref name="TSurrogate"/> (serializable);
+        /// if custom conversion operators are provided, they are used in place of implicit
+        /// or explicit conversion operators.
+        /// </summary>
+        /// <typeparam name="TUnderlying">The non-serializable type to provide custom support for</typeparam>
+        /// <typeparam name="TSurrogate">The serializable type that should be used instead</typeparam>
+        /// <param name="underlyingToSurrogate">Custom conversion operation</param>
+        /// <param name="surrogateToUnderlying">Custom conversion operation</param>
+        /// <param name="dataFormat">The <see cref="DataFormat"/> to use</param>
+        /// <param name="compatibilityLevel">The <see cref="CompatibilityLevel"/> to assume for this type</param>
+        /// <returns>The original model (for chaining).</returns>
+        public RuntimeTypeModel SetSurrogate<TUnderlying, TSurrogate>(
+            Func<TUnderlying, TSurrogate> underlyingToSurrogate = null, Func<TSurrogate, TUnderlying> surrogateToUnderlying = null,
+            DataFormat dataFormat = DataFormat.Default, CompatibilityLevel compatibilityLevel = CompatibilityLevel.NotSpecified)
+        {
+            Add<TUnderlying>(compatibilityLevel: compatibilityLevel).SetSurrogate(typeof(TSurrogate),
+                GetMethod(underlyingToSurrogate, nameof(underlyingToSurrogate)),
+                GetMethod(surrogateToUnderlying, nameof(surrogateToUnderlying)), dataFormat);
+            return this;
+
+            static MethodInfo GetMethod(Delegate value, string paramName)
+            {
+                if (value is null) return null;
+                var handlers = value.GetInvocationList();
+                if (handlers.Length != 1) ThrowHelper.ThrowArgumentException("A unicast delegate was expected.", paramName);
+                value = handlers[0];
+                if (value.Target is object target)
+                {
+                    var msg = "A delegate to a static method was expected.";
+                    if (target.GetType().IsDefined(typeof(CompilerGeneratedAttribute)))
+                    {
+                        msg += $" The conversion '{target.GetType().NormalizeName()}.{value.Method.Name}' is compiler-generated (possibly a lambda); an explicit static method should be used instead.";
+                    }
+                    ThrowHelper.ThrowArgumentException(msg, paramName);
+                }
+                return value.Method;
             }
         }
     }

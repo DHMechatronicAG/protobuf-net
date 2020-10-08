@@ -17,7 +17,7 @@
     <ProjectReference Include="..\protobuf-net.MessagePipes\protobuf-net.MessagePipes.csproj" />
     <ProjectReference Include="..\protobuf-net\protobuf-net.csproj" />
     <ProjectReference Include="..\protobuf-net.Reflection\protobuf-net.Reflection.csproj" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.1" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.2" />
     <PackageReference Include="System.Threading.Channels" Version="4.7.1" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
@@ -28,9 +28,11 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" />
+    <PackageReference Include="Xunit.SkippableFact" Version="1.4.13" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework)=='net48'">
-    <PackageReference Include="NHibernate" Version="5.3.2" />
+    <PackageReference Include="NHibernate" Version="5.3.3" />
     <PackageReference Include="Iesi.Collections" Version="4.0.4" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.7.1" />
     <Reference Include="Microsoft.CSharp" />
@@ -61,6 +63,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Update="Nerdbank.GitVersioning" Version="3.2.31" />
+    <PackageReference Update="Nerdbank.GitVersioning" Version="3.3.37" />
   </ItemGroup>
 </Project>
