@@ -11,6 +11,17 @@ Packages are available on NuGet: [protobuf-net](https://www.nuget.org/packages/p
 - 3.2: protogen support for emitting pre-coded custom serializers
 - future: build-time tooling from code-first (aka "generators")
 
+## 3.0.52
+
+- add new protobuf-net.NodaTime package that adds direct support for NodaTime primitives (note: this may be relocated to a NodaTime library)
+- fix #700 - new APIs to allow surrogates to be defined externally, and to be implemented over primitive backing types
+- fix #703 - new options on MSBuild targets (via Konstantin Sharon)
+- fix #693 - new `IgnoreUnknownSubTypes` API on `[ProtoContract(...)]` and `MetaType`; serializes the types it *does* understand, and silently ignores the unknown sub-types
+- fix #695 - JIT error when serialization callbacks declared at types other than the inheritance root
+- fix #713 - work correctly with arrays (etc) of nullable enum types
+- fix #697 - improve error reporting for invalid end-group markers
+- fix #668 - additional non-generic APIs
+- fix problem with protogen website not allowing imports
 
 ## 3.0.24
 

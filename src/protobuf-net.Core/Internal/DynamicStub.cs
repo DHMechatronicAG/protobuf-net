@@ -29,7 +29,18 @@ namespace ProtoBuf.Internal
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool TrySerializeRoot(Type type, TypeModel model, ref ProtoWriter.State state, object value)
-            => Get(type).TrySerializeRoot(model, ref state, value);
+        {
+            do
+            {
+                if (Get(type).TrySerializeRoot(model, ref state, value))
+                {
+                    return true;
+                }
+                // since we might be ignoring sub-types, we need to walk upwards and check all
+                type = type.BaseType;
+            } while (type is object && type != typeof(object));
+            return false;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool TryDeserialize(ObjectScope scope, Type type, TypeModel model, ref ProtoReader.State state, ref object value)
@@ -37,11 +48,34 @@ namespace ProtoBuf.Internal
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool TrySerializeAny(int fieldNumber, SerializerFeatures features, Type type, TypeModel model, ref ProtoWriter.State state, object value)
-            => Get(type).TrySerializeAny(fieldNumber, features, model, ref state, value);
+        {
+            do
+            {
+                if (Get(type).TrySerializeAny(fieldNumber, features, model, ref state, value))
+                {
+                    return true;
+                }
+                // since we might be ignoring sub-types, we need to walk upwards and check all
+                type = type.BaseType;
+            } while (type is object && type != typeof(object));
+            return false;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool TryDeepClone(Type type, TypeModel model, ref object value)
-            => Get(type).TryDeepClone(model, ref value);
+        {
+            do
+            {
+                if (Get(type).TryDeepClone(model, ref value))
+                {
+                    return true;
+                }
+                // since we might be ignoring sub-types, we need to walk upwards and check all
+                type = type.BaseType;
+            }
+            while (type is object && type != typeof(object));
+            return false;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool IsKnownType(Type type, TypeModel model, CompatibilityLevel ambient)
@@ -57,7 +91,7 @@ namespace ProtoBuf.Internal
         private static DynamicStub SlowGet(Type type)
         {
             
-            if (type == null) return NilStub.Instance;
+            if (type is null) return NilStub.Instance;
             
             DynamicStub obj = null;
             Type alt = null;
@@ -75,9 +109,9 @@ namespace ProtoBuf.Internal
             }
 
             // use indirection if possible
-            if (obj == null)
+            if (obj is null)
             {
-                if (alt != null && alt != type) obj = Get(alt);
+                if (alt is object && alt != type) obj = Get(alt);
                 obj ??= TryCreateConcrete(typeof(ConcreteStub<>), type);
             }
             lock (s_byType)
@@ -102,12 +136,12 @@ namespace ProtoBuf.Internal
             // Applies common proxy scenarios, resolving the actual type to consider
             static Type ResolveProxies(Type type)
             {
-                if (type == null) return null;
+                if (type is null) return null;
                 if (type.IsGenericParameter) return null;
 
                 // EF POCO
                 string fullName = type.FullName;
-                if (fullName != null && fullName.StartsWith("System.Data.Entity.DynamicProxies."))
+                if (fullName is object && fullName.StartsWith("System.Data.Entity.DynamicProxies."))
                 {
                     return type.BaseType;
                 }
@@ -175,11 +209,11 @@ namespace ProtoBuf.Internal
             protected override bool TryDeserializeRoot(TypeModel model, ref ProtoReader.State state, ref object value, bool autoCreate)
             {
                 var serializer = TypeModel.TryGetSerializer<T>(model);
-                if (serializer == null) return false;
+                if (serializer is null) return false;
                 // note FromObject is non-trivial; for value-type T it promotes the null to a default; we might not want that,
                 // depending on the value of autoCreate
 
-                bool resetToNullIfNotMoved = !autoCreate && value == null;
+                bool resetToNullIfNotMoved = !autoCreate && value is null;
                 var oldPos = state.GetPosition();
                 value = state.DeserializeRoot<T>(TypeHelper<T>.FromObject(value), serializer);
                 if (resetToNullIfNotMoved && oldPos == state.GetPosition()) value = null;
@@ -188,7 +222,7 @@ namespace ProtoBuf.Internal
             protected override bool TryDeserialize(ObjectScope scope, TypeModel model, ref ProtoReader.State state, ref object value)
             {
                 var serializer = TypeModel.TryGetSerializer<T>(model);
-                if (serializer == null) return false;
+                if (serializer is null) return false;
                 // note this null-check is non-trivial; for value-type T it promotes the null to a default
                 T typed = TypeHelper<T>.FromObject(value);
                 switch(scope)
@@ -212,7 +246,7 @@ namespace ProtoBuf.Internal
 
             // note: in IsKnownType and CanSerialize we want to avoid asking for the serializer from
             // the model unless we actually need it, as that can cause re-entrancy loops
-            protected override bool IsKnownType(TypeModel model, CompatibilityLevel ambient) => model != null && model.IsKnownType<T>(ambient);
+            protected override bool IsKnownType(TypeModel model, CompatibilityLevel ambient) => model is object && model.IsKnownType<T>(ambient);
 
             protected override bool CanSerialize(TypeModel model, out SerializerFeatures features)
             {
@@ -226,7 +260,7 @@ namespace ProtoBuf.Internal
                     features = default;
                     return false;
                 }
-                if (ser == null)
+                if (ser is null)
                 {
                     features = default;
                     return false;
@@ -238,7 +272,7 @@ namespace ProtoBuf.Internal
             protected override bool TrySerializeRoot(TypeModel model, ref ProtoWriter.State state, object value)
             {
                 var serializer = TypeModel.TryGetSerializer<T>(model);
-                if (serializer == null) return false;
+                if (serializer is null) return false;
                 // note this null-check is non-trivial; for value-type T it promotes the null to a default
                 state.SerializeRoot<T>(TypeHelper<T>.FromObject(value), serializer);
                 return true;
@@ -247,7 +281,7 @@ namespace ProtoBuf.Internal
             protected override bool TrySerializeAny(int fieldNumber, SerializerFeatures features, TypeModel model, ref ProtoWriter.State state, object value)
             {
                 var serializer = TypeModel.TryGetSerializer<T>(model);
-                if (serializer == null) return false;
+                if (serializer is null) return false;
                 // note this null-check is non-trivial; for value-type T it promotes the null to a default
                 T typed = TypeHelper<T>.FromObject(value);
                 CheckAnyAuxFlow(features, serializer);
@@ -273,6 +307,9 @@ namespace ProtoBuf.Internal
 
             protected override bool TryDeepClone(TypeModel model, ref object value)
             {
+                // check feasability first (required because of sub-type skipping)
+                if (TypeModel.TryGetSerializer<T>(model) is null) return false;
+
                 value = model.DeepClone<T>(TypeHelper<T>.FromObject(value));
                 return true;
             }
@@ -283,7 +320,7 @@ namespace ProtoBuf.Internal
             || ReferenceEquals(Get(expected), Get(actual)); // just compare the results
 
         internal static Type GetEffectiveType(Type type)
-            => type == null ? null : Get(type).GetEffectiveType() ?? type;
+            => type is null ? null : Get(type).GetEffectiveType() ?? type;
 
         protected abstract Type GetEffectiveType();
     }
