@@ -2,6 +2,7 @@
 using ProtoBuf.Meta;
 using System;
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 namespace ProtoBuf
@@ -12,15 +13,12 @@ namespace ProtoBuf
     /// this instance can re-use the previously calculated lengths. If the object state changes between the
     /// measure and serialize operations, the behavior is undefined.
     /// </summary>
-    public struct MeasureState<T> : IDisposable
+    public struct MeasureState<[DynamicallyAccessedMembers(DynamicAccess.ContractType)] T> : IDisposable
     {
         private readonly TypeModel _model;
         private readonly T _value;
         private readonly object _userState;
-
-#pragma warning disable IDE0069 // "not disposed" yes it is - see Dispose (it just isn't a trivial case)
         private ProtoWriter _writer;
-#pragma warning restore IDE0069
 
         internal MeasureState(TypeModel model, in T value, object userState, long abortAfter)
         {
@@ -71,7 +69,7 @@ namespace ProtoBuf
             try
             {
                 var writer = _writer;
-                if (writer == null) throw new ObjectDisposedException(nameof(MeasureState<T>));
+                if (writer is null) throw new ObjectDisposedException(nameof(MeasureState<T>));
 
                 var targetWriter = state.GetWriter();
                 targetWriter.InitializeFrom(writer);

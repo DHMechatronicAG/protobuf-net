@@ -11,8 +11,6 @@ using System.Threading;
 using Xunit;
 using Xunit.Abstractions;
 
-#pragma warning disable IDE0019
-
 namespace ProtoBuf.Test
 {
     public class CustomScalarAllocator
@@ -25,7 +23,7 @@ namespace ProtoBuf.Test
             model.Add<HazRegularString>();
             //model.Add<HazBlobish>();
             model.Add<HazMemoryBlobish>();
-            model.CompileAndVerify(deleteOnSuccess: false);
+            model.CompileAndVerify();
         }
 
         private readonly ITestOutputHelper _log;

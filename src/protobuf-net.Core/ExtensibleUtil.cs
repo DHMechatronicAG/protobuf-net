@@ -38,13 +38,10 @@ namespace ProtoBuf
 #pragma warning restore RCS1163, IDE0060 // Unused parameter.
         {
             model ??= TypeModel.DefaultModel;
-            if (instance == null) ThrowHelper.ThrowArgumentNullException(nameof(instance));
+            if (instance is null) ThrowHelper.ThrowArgumentNullException(nameof(instance));
             if (tag <= 0) ThrowHelper.ThrowArgumentOutOfRangeException(nameof(tag));
-#pragma warning disable RCS1227 // Validate arguments correctly.
             IExtension extn = instance.GetExtensionObject(false);
-#pragma warning restore RCS1227 // Validate arguments correctly.
-
-            if (extn == null)
+            if (extn is null)
             {
                 yield break;
             }
@@ -57,7 +54,7 @@ namespace ProtoBuf
                 var state = ProtoReader.State.Create(stream, model, ctx, ProtoReader.TO_EOF).Solidify();
                 try
                 {
-                    while (model.TryDeserializeAuxiliaryType(ref state, format, tag, type, ref value, true, true, false, false, null) && value != null)
+                    while (model.TryDeserializeAuxiliaryType(ref state, format, tag, type, ref value, true, true, false, false, null) && value is object)
                     {
                         if (!singleton)
                         {
@@ -66,7 +63,7 @@ namespace ProtoBuf
                             value = null; // fresh item each time
                         }
                     }
-                    if (singleton && value != null)
+                    if (singleton && value is object)
                     {
                         yield return value;
                     }
@@ -85,15 +82,15 @@ namespace ProtoBuf
         internal static void AppendExtendValue(TypeModel model, IExtensible instance, int tag, DataFormat format, object value)
         {
             model ??= TypeModel.DefaultModel;
-            if (instance == null) ThrowHelper.ThrowArgumentNullException(nameof(instance));
-            if (value == null) ThrowHelper.ThrowArgumentNullException(nameof(value));
+            if (instance is null) ThrowHelper.ThrowArgumentNullException(nameof(instance));
+            if (value is null) ThrowHelper.ThrowArgumentNullException(nameof(value));
 
             // TODO
             //model.CheckTagNotInUse(tag);
 
             // obtain the extension object and prepare to write
             IExtension extn = instance.GetExtensionObject(true);
-            if (extn == null) ThrowHelper.ThrowInvalidOperationException("No extension object available; appended data would be lost.");
+            if (extn is null) ThrowHelper.ThrowInvalidOperationException("No extension object available; appended data would be lost.");
             bool commit = false;
             Stream stream = extn.BeginAppend();
             try
@@ -113,9 +110,8 @@ namespace ProtoBuf
                 {
                     state.Dispose();
                 }
-#pragma warning disable IDE0059 // Unnecessary assignment of a value - the rule is wrong; this matters
+
                 commit = true;
-#pragma warning restore IDE0059
             }
             finally
             {

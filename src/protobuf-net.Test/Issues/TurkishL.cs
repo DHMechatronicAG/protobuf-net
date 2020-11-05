@@ -4,6 +4,7 @@ using Xunit;
 
 namespace ProtoBuf.unittest.Attribs
 {
+    
     public class TurkishL
     {
         [Fact]
@@ -34,4 +35,3 @@ namespace ProtoBuf.unittest.Attribs
         }
     }
 }
-
