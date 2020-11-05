@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -12,52 +13,52 @@ namespace ProtoBuf.Serializers
     {
         /// <summary>Create a serializer that operates on immutable arrays</summary>
         [MethodImpl(ProtoReader.HotPath)]
-        public static RepeatedSerializer<ImmutableArray<T>, T> CreateImmutableArray<T>()
+        public static RepeatedSerializer<ImmutableArray<T>, T> CreateImmutableArray<[DynamicallyAccessedMembers(DynamicAccess.ContractType)] T>()
             => SerializerCache<ImmutableArraySerializer<T>>.InstanceField;
 
         /// <summary>Create a serializer that operates on immutable lists</summary>
         [MethodImpl(ProtoReader.HotPath)]
-        public static RepeatedSerializer<ImmutableList<T>, T> CreateImmutableList<T>()
+        public static RepeatedSerializer<ImmutableList<T>, T> CreateImmutableList<[DynamicallyAccessedMembers(DynamicAccess.ContractType)] T>()
             => SerializerCache<ImmutableListSerializer<T>>.InstanceField;
 
         /// <summary>Create a serializer that operates on immutable lists</summary>
         [MethodImpl(ProtoReader.HotPath)]
-        public static RepeatedSerializer<IImmutableList<T>, T> CreateImmutableIList<T>()
+        public static RepeatedSerializer<IImmutableList<T>, T> CreateImmutableIList<[DynamicallyAccessedMembers(DynamicAccess.ContractType)] T>()
             => SerializerCache<ImmutableIListSerializer<T>>.InstanceField;
 
         /// <summary>Create a serializer that operates on immutable queues</summary>
         [MethodImpl(ProtoReader.HotPath)]
-        public static RepeatedSerializer<ImmutableQueue<T>, T> CreateImmutableQueue<T>()
+        public static RepeatedSerializer<ImmutableQueue<T>, T> CreateImmutableQueue<[DynamicallyAccessedMembers(DynamicAccess.ContractType)] T>()
             => SerializerCache<ImmutableQueueSerializer<T>>.InstanceField;
 
         /// <summary>Create a serializer that operates on immutable queues</summary>
         [MethodImpl(ProtoReader.HotPath)]
-        public static RepeatedSerializer<IImmutableQueue<T>, T> CreateImmutableIQueue<T>()
+        public static RepeatedSerializer<IImmutableQueue<T>, T> CreateImmutableIQueue<[DynamicallyAccessedMembers(DynamicAccess.ContractType)] T>()
             => SerializerCache<ImmutableIQueueSerializer<T>>.InstanceField;
 
         /// <summary>Create a serializer that operates on immutable stacks</summary>
         [MethodImpl(ProtoReader.HotPath)]
-        public static RepeatedSerializer<ImmutableStack<T>, T> CreateImmutableStack<T>()
+        public static RepeatedSerializer<ImmutableStack<T>, T> CreateImmutableStack<[DynamicallyAccessedMembers(DynamicAccess.ContractType)] T>()
             => SerializerCache<ImmutableStackSerializer<T>>.InstanceField;
 
         /// <summary>Create a serializer that operates on immutable stacks</summary>
         [MethodImpl(ProtoReader.HotPath)]
-        public static RepeatedSerializer<IImmutableStack<T>, T> CreateImmutableIStack<T>()
+        public static RepeatedSerializer<IImmutableStack<T>, T> CreateImmutableIStack<[DynamicallyAccessedMembers(DynamicAccess.ContractType)] T>()
             => SerializerCache<ImmutableIStackSerializer<T>>.InstanceField;
 
         /// <summary>Create a serializer that operates on immutable sets</summary>
         [MethodImpl(ProtoReader.HotPath)]
-        public static RepeatedSerializer<ImmutableHashSet<T>, T> CreateImmutableHashSet<T>()
+        public static RepeatedSerializer<ImmutableHashSet<T>, T> CreateImmutableHashSet<[DynamicallyAccessedMembers(DynamicAccess.ContractType)] T>()
             => SerializerCache<ImmutableHashSetSerializer<T>>.InstanceField;
 
         /// <summary>Create a serializer that operates on immutable sets</summary>
         [MethodImpl(ProtoReader.HotPath)]
-        public static RepeatedSerializer<ImmutableSortedSet<T>, T> CreateImmutableSortedSet<T>()
+        public static RepeatedSerializer<ImmutableSortedSet<T>, T> CreateImmutableSortedSet<[DynamicallyAccessedMembers(DynamicAccess.ContractType)] T>()
             => SerializerCache<ImmutableSortedSetSerializer<T>>.InstanceField;
 
         /// <summary>Create a serializer that operates on immutable sets</summary>
         [MethodImpl(ProtoReader.HotPath)]
-        public static RepeatedSerializer<IImmutableSet<T>, T> CreateImmutableISet<T>()
+        public static RepeatedSerializer<IImmutableSet<T>, T> CreateImmutableISet<[DynamicallyAccessedMembers(DynamicAccess.ContractType)] T>()
             => SerializerCache<ImmutableISetSerializer<T>>.InstanceField;
 
 
@@ -114,7 +115,7 @@ namespace ProtoBuf.Serializers
             => newValues.Count == 1 ? values.Add(newValues.Singleton()) : values.AddRange(newValues);
         protected override ImmutableList<T> Clear(ImmutableList<T> values, ISerializationContext context)
             => values.Clear();
-        protected override int TryGetCount(ImmutableList<T> values) => values == null ? 0 : values.Count;
+        protected override int TryGetCount(ImmutableList<T> values) => values is null ? 0 : values.Count;
 
         internal override long Measure(ImmutableList<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
         {
@@ -188,7 +189,7 @@ namespace ProtoBuf.Serializers
             => newValues.Count == 1 ? values.Add(newValues.Singleton()) : values.Union(newValues);
         protected override ImmutableHashSet<T> Clear(ImmutableHashSet<T> values, ISerializationContext context)
             => values.Clear();
-        protected override int TryGetCount(ImmutableHashSet<T> values) => values == null ? 0 : values.Count;
+        protected override int TryGetCount(ImmutableHashSet<T> values) => values is null ? 0 : values.Count;
 
         internal override long Measure(ImmutableHashSet<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
         {
@@ -214,7 +215,7 @@ namespace ProtoBuf.Serializers
             => newValues.Count == 1 ? values.Add(newValues.Singleton()) : values.Union(newValues);
         protected override ImmutableSortedSet<T> Clear(ImmutableSortedSet<T> values, ISerializationContext context)
             => values.Clear();
-        protected override int TryGetCount(ImmutableSortedSet<T> values) => values == null ? 0 : values.Count;
+        protected override int TryGetCount(ImmutableSortedSet<T> values) => values is null ? 0 : values.Count;
 
         internal override long Measure(ImmutableSortedSet<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
         {
@@ -296,7 +297,7 @@ namespace ProtoBuf.Serializers
 
         protected override ImmutableStack<T> Clear(ImmutableStack<T> values, ISerializationContext context)
             => values.Clear();
-        protected override int TryGetCount(ImmutableStack<T> values) => (values == null || values.IsEmpty) ? 0 : -1;
+        protected override int TryGetCount(ImmutableStack<T> values) => (values is null || values.IsEmpty) ? 0 : -1;
 
         internal override long Measure(ImmutableStack<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
         {
@@ -349,7 +350,7 @@ namespace ProtoBuf.Serializers
         {
             try
             {
-                return values == null || values.IsEmpty ? 0 : -1;
+                return values is null || values.IsEmpty ? 0 : -1;
             }
             catch
             {
@@ -409,7 +410,7 @@ namespace ProtoBuf.Serializers
 
         protected override ImmutableQueue<T> Clear(ImmutableQueue<T> values, ISerializationContext context)
             => values.Clear();
-        protected override int TryGetCount(ImmutableQueue<T> values) => values == null || values.IsEmpty ? 0 : -1;
+        protected override int TryGetCount(ImmutableQueue<T> values) => values is null || values.IsEmpty ? 0 : -1;
 
         internal override long Measure(ImmutableQueue<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
         {
@@ -461,7 +462,7 @@ namespace ProtoBuf.Serializers
         {
             try
             {
-                return values == null || values.IsEmpty ? 0 : -1;
+                return values is null || values.IsEmpty ? 0 : -1;
             }
             catch
             {

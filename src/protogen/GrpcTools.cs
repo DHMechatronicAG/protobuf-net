@@ -33,7 +33,8 @@ namespace ProtoBuf
                 Console.Error.WriteLine($"Unknown gRPC mode: '{modeString}'");
                 return 1;
             }
-            if (string.IsNullOrWhiteSpace(outPath))
+            if (string.IsNullOrWhiteSpace(outPath) &&
+                mode == GrpcMode.Get)
             {
                 Console.Error.WriteLine($"Missing output directive; please specify --csharp_out etc");
                 return 1;
@@ -79,6 +80,12 @@ namespace ProtoBuf
                                 {
                                     var proto = Serializer.Deserialize<FileDescriptorProto>(new Span<byte>(payload));
                                     proto.IncludeInOutput = true; // have to assume all
+
+                                    foreach (var dependency in proto.Dependencies)
+                                    {
+                                        proto.AddImport(dependency, true, default);
+                                    }
+
                                     (set ??= new FileDescriptorSet()).Files.Add(proto);
                                 }
                             }

@@ -27,11 +27,7 @@
     <ProjectReference Include="..\protobuf-net.Reflection\protobuf-net.Reflection.csproj">
       <PrivateAssets>All</PrivateAssets>
     </ProjectReference>
-    <ProjectReference Include="..\protobuf-net.Core\protobuf-net.Core.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Update="Nerdbank.GitVersioning" Version="3.2.31" />
+    <ProjectReference Include="..\protobuf-net.Core\protobuf-net.Core.csproj"/>
   </ItemGroup>
   
   <Target Name="CopyBuildFiles" AfterTargets="CoreBuild" BeforeTargets="_CalculateInputsOutputsForPack;_IntermediatePack">
