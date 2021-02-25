@@ -88,10 +88,8 @@ namespace protogen
                             break;
                         case "--pwd":
                             Console.WriteLine($"Current Directory: {Directory.GetCurrentDirectory()}");
-#if NETCOREAPP2_1 || NETSTANDARD2_0
                             Console.WriteLine($"Program: {typeof(Program).Assembly.Location}");
                             Console.WriteLine($"CodeGenerator: {typeof(CodeGenerator).Assembly.Location}");
-#endif
                             break;
                         case "--grpc":
                             if (++i < args.Length)
@@ -276,11 +274,15 @@ namespace protogen
         // with thanks to "Dave": https://stackoverflow.com/a/340454/23354
         public static string MakeRelativePath(string fromPath, string toPath)
         {
-#if NETCOREAPP2_0 || NETCOREAPP2_1
+#if !NETFRAMEWORK
             return Path.GetRelativePath(fromPath, toPath);
 #else
             if (String.IsNullOrEmpty(fromPath)) throw new ArgumentNullException(nameof(fromPath));
             if (String.IsNullOrEmpty(toPath)) throw new ArgumentNullException(nameof(toPath));
+            // make sure there is a trailing '/', else Uri.MakeRelativeUri won't work as expected
+            char lastChar = fromPath[fromPath.Length - 1];
+            if (lastChar != Path.DirectorySeparatorChar && lastChar != Path.AltDirectorySeparatorChar)
+                fromPath += Path.DirectorySeparatorChar;
 
             Uri fromUri = new Uri(fromPath, UriKind.RelativeOrAbsolute);
             if (!fromUri.IsAbsoluteUri)
@@ -310,12 +312,9 @@ namespace protogen
         private static string GetVersion<T>() => GetVersion(typeof(T));
         private static string GetVersion(Type type)
         {
-#if NETCOREAPP1_1
-            var attrib = type.GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
-#else
             var attribs = type.Assembly.GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute), false);
             var attrib = attribs.Length == 0 ? null : attribs[0] as AssemblyInformationalVersionAttribute;
-#endif
+
             return attrib?.InformationalVersion ?? "(unknown)";
         }
 
@@ -340,7 +339,7 @@ Parse PROTO_FILES and generate output based on the options given:
                               Specify naming convention rules.
   +oneof={default|enum}       Specify whether 'oneof' should generate enums.
   +listset={yes|no}           Specify whether lists should emit setters
-  +services={yes|no}          Specify whether services should be generated.
+  +services={grpc;wcf}        Semi-colon list of service metadata to support.
   +OPTION=VALUE               Specify a custom OPTION/VALUE pair for the
                               selected code generator.
   --package=PACKAGE           Add a default package (when no package is

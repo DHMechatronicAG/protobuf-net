@@ -45,14 +45,14 @@ namespace ProtoBuf.Compiler
         static class SharedModule
         {
             internal static readonly ModuleBuilder Shared
-                = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(nameof(SharedModule)), AssemblyBuilderAccess.Run)
+                = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(nameof(SharedModule)), AssemblyBuilderAccess.RunAndCollect)
                     .DefineDynamicModule(nameof(SharedModule));
         }
 
         internal static ILGenerator Implement(TypeBuilder type, Type interfaceType, string name, bool @explicit = true)
         {
             var decl = interfaceType.GetMethod(name, BindingFlags.Public | BindingFlags.Instance);
-            if (decl is null) throw new ArgumentException(nameof(name));
+            if (decl is null) throw new ArgumentException($"Declaration not found for '{name}'", nameof(name));
             var args = decl.GetParameters();
             string implName = name; // name.StartsWith("get_") ? name.Substring(4) : name;
             var attribs = (decl.Attributes & ~MethodAttributes.Abstract) | MethodAttributes.Final;

@@ -31,6 +31,7 @@ namespace ProtoBuf.Reflection
         /// <summary>
         /// Escapes language keywords
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0066:Convert switch statement to expression", Justification = "Readability")]
         protected override string Escape(string identifier)
         {
             switch (identifier)
@@ -770,6 +771,7 @@ namespace ProtoBuf.Reflection
         /// <summary>
         /// Indicate which types will commonly use arrays
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0066:Convert switch statement to expression", Justification = "Readability")]
         protected virtual bool UseArray(FieldDescriptorProto field)
         {
             switch (field.type)
@@ -1042,11 +1044,20 @@ namespace ProtoBuf.Reflection
         protected override void WriteServiceHeader(GeneratorContext ctx, ServiceDescriptorProto service, ref object state)
         {
             var name = ctx.NameNormalizer.GetName(service);
-            var tw = ctx.Write("[global::System.ServiceModel.ServiceContract(Name = @\"");
-            tw.Write(service.FullyQualifiedName.TrimStart(ParserContext.Period));
-            tw.WriteLine("\")]");
+            if (ctx.EmitServicesFor(ServiceKinds.Grpc))
+            {
+                var tw = ctx.Write("[global::ProtoBuf.Grpc.Configuration.Service(@\"");
+                tw.Write(service.FullyQualifiedName.TrimStart(ParserContext.Period));
+                tw.WriteLine("\")]");
+            }
+            if (ctx.EmitServicesFor(ServiceKinds.Wcf))
+            {
+                var tw = ctx.Write("[global::System.ServiceModel.ServiceContract(Name = @\"");
+                tw.Write(service.FullyQualifiedName.TrimStart(ParserContext.Period));
+                tw.WriteLine("\")]");
+            }
             WriteOptions(ctx, service.Options);
-            ctx.WriteLine($"{GetAccess(GetAccess(service))} interface {Escape(name)}").WriteLine("{").Indent();
+            ctx.WriteLine($"{GetAccess(GetAccess(service))} partial interface {Escape(name)}").WriteLine("{").Indent();
         }
 
         /// <summary>
@@ -1065,7 +1076,14 @@ namespace ProtoBuf.Reflection
             var name = ctx.NameNormalizer.GetName(method);
             if (name != method.Name)
             {
-                ctx.WriteLine($@"[global::System.ServiceModel.OperationContract(Name = @""{method.Name}"")]");
+                if (ctx.EmitServicesFor(ServiceKinds.Grpc))
+                {
+                    ctx.WriteLine($@"[global::ProtoBuf.Grpc.Configuration.Operation(@""{method.Name}"")]");
+                }
+                if (ctx.EmitServicesFor(ServiceKinds.Wcf))
+                {
+                    ctx.WriteLine($@"[global::System.ServiceModel.OperationContract(Name = @""{method.Name}"")]");
+                }
             }
             WriteOptions(ctx, method.Options);
 
