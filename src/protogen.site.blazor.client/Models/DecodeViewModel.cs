@@ -17,12 +17,13 @@ namespace ProtoBuf.Models
             Base64,
             File
         }
-        [RegularExpression(@"\A\b[0-9a-fA-F\s]+\b\Z")]
+        [RegularExpression(@"\A\b[\-0-9a-fA-F\s]+\b\Z")]
         public string Hexadecimal { get; set; }
-        [RegularExpression(@"^[a-zA-Z0-9\+/]*={0,3}$")]
+        [RegularExpression(@"^[a-zA-Z0-9\+/\s]*={0,3}$")]
         public string Base64 { get; set; }
         public IFileListEntry File { get; set; }
-        public DecodeContentTypeEnum DecodeContentType { get; set; } = DecodeContentTypeEnum.File;
+        public bool ShowFullStrings { get; set; }
+        public DecodeContentTypeEnum DecodeContentType { get; set; } = DecodeContentTypeEnum.Hexa;
 
         private async Task<byte[]> GetData()
         {
@@ -30,7 +31,7 @@ namespace ProtoBuf.Models
             switch (DecodeContentType)
             {
                 case DecodeContentTypeEnum.Hexa:
-                    Hexadecimal = Hexadecimal.Replace(" ", "").Replace("-", "").Trim();
+                    Hexadecimal = Compact(Hexadecimal).Replace("-", "").Trim();
 
                     int len = Hexadecimal.Length / 2;
 
@@ -41,7 +42,7 @@ namespace ProtoBuf.Models
                     }
                     return tmp;
                 case DecodeContentTypeEnum.Base64:
-                    return Convert.FromBase64String(Base64);
+                    return Convert.FromBase64String(Compact(Base64));
                 case DecodeContentTypeEnum.File:
                     var ms = new System.IO.MemoryStream();
                     await File.Data.CopyToAsync(ms);
@@ -53,10 +54,13 @@ namespace ProtoBuf.Models
             }
         }
 
+        static string Compact(string input)
+            => input.Replace(" ", "").Replace("\t", "").Replace("\r\n", "").Replace("\r", "").Replace("\n", "").Trim();
+
         public async Task<DecodeModel> GetDecodeModel()
         {
             var data = await GetData();
-            return (new DecodeModel(data));
+            return (new DecodeModel(data, ShowFullStrings));
         }
     }
 }

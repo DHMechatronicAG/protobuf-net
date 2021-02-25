@@ -44,6 +44,30 @@ namespace Google.Protobuf.Reflection
     }
 
     /// <summary>
+    /// Represents a virtual file system
+    /// </summary>
+    public interface IFileSystem
+    {
+        /// <summary>
+        /// Indicates whether a specified file exists
+        /// </summary>
+        bool Exists(string path);
+        /// <summary>
+        /// Opens the specified file for text parsing
+        /// </summary>
+        TextReader OpenText(string path);
+    }
+
+    internal class DefaultFileSystem : IFileSystem
+    {
+        private DefaultFileSystem() { }
+        public static IFileSystem Instance { get; } = new DefaultFileSystem();
+        bool IFileSystem.Exists(string path) => File.Exists(path);
+
+        TextReader IFileSystem.OpenText(string path) => File.OpenText(path);
+    }
+
+    /// <summary>
     /// The protocol compiler can output a FileDescriptorSet containing the .proto
     /// files it parses.
     /// </summary>
@@ -57,6 +81,13 @@ namespace Google.Protobuf.Reflection
         /// Provides a callback to allow/deny individual imports.
         /// </summary>
         public Func<string, bool> ImportValidator { get; set; }
+
+        /// <summary>
+        /// Provides a virtual file system (otherwise OS defaults are assumed)
+        /// </summary>
+        public IFileSystem FileSystem { get; set; }
+
+        internal IFileSystem EffectiveFileSystem => FileSystem ?? DefaultFileSystem.Instance;
 
         internal List<string> importPaths = new List<string>();
 
@@ -137,8 +168,11 @@ namespace Google.Protobuf.Reflection
                     return new StreamReader(embedded);
                 return null;
             }
-            return File.OpenText(found);
+            return EffectiveFileSystem.OpenText(found);
         }
+
+
+
         private static Stream TryGetEmbedded(string name)
         {
             if (string.IsNullOrWhiteSpace(name) || !name.EndsWith(".proto")) return null;
@@ -158,10 +192,11 @@ namespace Google.Protobuf.Reflection
         private string FindFile(string file)
         {
             string rel;
+            var fileSystem = EffectiveFileSystem;
             foreach (var path in importPaths)
             {
                 rel = Path.Combine(path, file);
-                if (File.Exists(rel)) return rel;
+                if (fileSystem.Exists(rel)) return rel;
             }
             return null;
         }
@@ -1170,19 +1205,11 @@ namespace Google.Protobuf.Reflection
             }
         }
 
-        private static bool ShouldResolveType(FieldDescriptorProto.Type type)
+        private static bool ShouldResolveType(FieldDescriptorProto.Type type) => type switch
         {
-            switch (type)
-            {
-                case 0:
-                case FieldDescriptorProto.Type.TypeMessage:
-                case FieldDescriptorProto.Type.TypeEnum:
-                case FieldDescriptorProto.Type.TypeGroup:
-                    return true;
-                default:
-                    return false;
-            }
-        }
+            0 or FieldDescriptorProto.Type.TypeMessage or FieldDescriptorProto.Type.TypeEnum or FieldDescriptorProto.Type.TypeGroup => true,
+            _ => false,
+        };
         private void ResolveTypes(ParserContext ctx, List<FieldDescriptorProto> fields, IType parent, bool options)
         {
             foreach (var field in fields)
@@ -2056,6 +2083,7 @@ namespace Google.Protobuf.Reflection
         internal static string GetJsonName(string name)
             => Regex.Replace(name, "_+([0-9a-zA-Z])", match => match.Groups[1].Value.ToUpperInvariant()).TrimEnd(Underscores);
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0066:Convert switch statement to expression", Justification = "Readability")]
         internal static bool CanPack(Type type)
         {
             switch (type)
@@ -3138,7 +3166,7 @@ namespace ProtoBuf.Reflection
         public void Dispose() { Tokens?.Dispose(); }
 
         internal void CheckNames(IHazNames parent, string name, Token token
-#if DEBUG && NETSTANDARD1_3
+#if DEBUG && !NETFRAMEWORK
             , [System.Runtime.CompilerServices.CallerMemberName] string caller = null
 #endif
             )
@@ -3146,7 +3174,7 @@ namespace ProtoBuf.Reflection
             if (parent != null && parent.GetNames().Contains(name))
             {
                 Errors.Error(token, $"name '{name}' is already in use"
-#if DEBUG && NETSTANDARD1_3
+#if DEBUG && !NETFRAMEWORK
              + $" ({caller})"
 #endif
                      , ErrorCode.FieldDuplicatedName);
