@@ -34,4 +34,10 @@
 		  <DependentUpon>Meta\MetaType.cs</DependentUpon>
 	  </None>
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Buffers" />
+    <PackageReference Include="System.Collections.Immutable" />
+    <PackageReference Include="System.Memory" />
+  </ItemGroup>
 </Project>

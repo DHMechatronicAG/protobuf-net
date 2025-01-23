@@ -21,6 +21,10 @@
     <PackageReference Include="System.Collections.Immutable" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.Buffers" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(TargetFramework)'=='netstandard2.1'">
     <DefineConstants>$(DefineConstants);PLAT_ISREF;PLAT_SPAN_OVERLOADS;PLAT_CONCURRENT_CLEAR</DefineConstants>
   </PropertyGroup>
