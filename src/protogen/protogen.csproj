@@ -9,6 +9,7 @@
     <GrpcTools>false</GrpcTools>
     <ApplicationIcon>protobuf-net.ico</ApplicationIcon>
     <RollForward>LatestMajor</RollForward>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetFramework)'!='net462'">
     <GrpcTools>true</GrpcTools>

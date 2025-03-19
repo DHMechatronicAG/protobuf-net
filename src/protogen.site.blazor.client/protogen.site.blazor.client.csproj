@@ -4,6 +4,7 @@
     <RazorLangVersion>3.0</RazorLangVersion>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <SignAssembly>false</SignAssembly>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
   <ItemGroup>
     <!-- extends watching group to include *.razor files -->

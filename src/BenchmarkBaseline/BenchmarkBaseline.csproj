@@ -7,6 +7,7 @@
     <DefineConstants Condition="'$(TargetFramework)'=='net472'">$(DefineConstants);WRITE_DLL</DefineConstants>
     <RootNamespace>Benchmark</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,7 +27,7 @@
     <PackageReference Include="Pipelines.Sockets.Unofficial" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" />
     <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" />
-    <PackageReference Include="System.Collections.Immutable" VersionOverride="8.0.0"/>
+    <PackageReference Include="System.Collections.Immutable" VersionOverride="8.0.0" />
     <PackageReference Include="System.Reflection.Metadata" />
   </ItemGroup>
 

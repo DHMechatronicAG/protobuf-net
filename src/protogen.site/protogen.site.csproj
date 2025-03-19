@@ -10,6 +10,7 @@
     <SignAssembly>false</SignAssembly>
     <UserSecretsId>f7c4472d-ea58-47e2-9129-489edcd48abe</UserSecretsId>
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

@@ -12,6 +12,7 @@
     <GrpcTools>true</GrpcTools>
     <ApplicationIcon>protobuf-net.ico</ApplicationIcon>
     <RollForward>LatestMajor</RollForward>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
   <PropertyGroup Condition="'$(GrpcTools)'=='true'">
     <DefineConstants>$(DefineConstants);GRPC_TOOLS</DefineConstants>
