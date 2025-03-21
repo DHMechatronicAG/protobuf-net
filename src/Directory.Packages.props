@@ -2,7 +2,7 @@
   <ItemGroup>
     <!-- actual package output dependencies -->
     <PackageVersion Include="System.Collections.Immutable" Version="9.0.3" />
-    <PackageVersion Include="System.Memory" Version="4.6.1" />
+    <PackageVersion Include="System.Memory" Version="4.6.2" />
     <PackageVersion Include="System.Reflection.Emit" Version="4.7.0" />
     <PackageVersion Include="System.Reflection.Emit.Lightweight" Version="4.7.0" />
     <PackageVersion Include="System.IO.Pipelines" Version="7.0.0" />
