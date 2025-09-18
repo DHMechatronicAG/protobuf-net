@@ -19,6 +19,7 @@
     <DefineConstants>FEAT_COMPILER;FX30</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio">
       <PrivateAssets>all</PrivateAssets>
@@ -48,6 +49,7 @@
     <PackageReference Include="System.Reflection.TypeExtensions" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\protobuf-net.HybridCache\protobuf-net.HybridCache.csproj" />
     <ProjectReference Include="..\protobuf-net.NodaTime\protobuf-net.NodaTime.csproj" />
     <ProjectReference Include="..\protobuf-net.TestCompatibilityLevel\protobuf-net.TestCompatibilityLevel.csproj" />
     <ProjectReference Include="..\protobuf-net\protobuf-net.csproj" />
