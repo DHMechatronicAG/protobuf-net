@@ -7,7 +7,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Configurations>Debug;Release</Configurations>
-    <Platforms>AnyCPU;x64</Platforms>
+    <Platforms>AnyCPU;x64;Arm64</Platforms>
   </PropertyGroup>
 
   <!-- define configuration per-platform -->
