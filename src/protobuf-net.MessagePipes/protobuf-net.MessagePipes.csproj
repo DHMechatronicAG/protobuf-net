@@ -8,7 +8,6 @@
     <Title>protobuf-net.MessagePipes</Title>
     <Description>Provides a simple message-pipe using protobuf payloads</Description>
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
-    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

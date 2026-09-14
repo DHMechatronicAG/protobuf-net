@@ -9,7 +9,6 @@
     <DefineConstants Condition="'$(TargetFramework)'!='net472'">$(DefineConstants);INTRINSICS</DefineConstants>
     <RootNamespace>Benchmark</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

@@ -6,7 +6,6 @@
     <RootNamespace />
     <NoWarn>IDE1006</NoWarn>
     <IsTestProject>false</IsTestProject>
-    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
   <!--
   9: ===3.5

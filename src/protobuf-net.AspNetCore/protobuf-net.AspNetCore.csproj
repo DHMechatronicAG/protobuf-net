@@ -7,7 +7,6 @@
     <AssemblyName>protobuf-net.AspNetCore</AssemblyName>
     <Title>protobuf-net.AspNetCore</Title>
     <Description>Provides ASP.NET Core specific utilities for protobuf-net</Description>
-    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
