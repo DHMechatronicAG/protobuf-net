@@ -4,7 +4,7 @@
     <TargetFrameworks>net462;netstandard2.0;netstandard2.1;net8.0;net10.0</TargetFrameworks>
     <RootNamespace>ProtoBuf</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
     <AssemblyName>protobuf-net.Core</AssemblyName>
     <Title>protobuf-net.Core</Title>
     <Description>The protobuf-net serialization engine and build-time tooling; most projects should reference protobuf-net, which adds the runtime type model</Description>
