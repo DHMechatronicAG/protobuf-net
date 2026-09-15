@@ -9,7 +9,7 @@
          packs its dll - it just no longer publishes anything of its own. -->
     <IsPackable>false</IsPackable>
     <IncludeBuildOutput>false</IncludeBuildOutput>
-    <NoWarn>$(NoWarn);RS2007;NU5128</NoWarn>
+    <NoWarn>$(NoWarn);RS2007;NU5128;RS1042</NoWarn>
     <!-- The point of referencing Microsoft.CodeAnalysis.Analyzers is the RS2000-family release-tracking
          rules, which are escalated to errors below so an unrecorded diagnostic id cannot ship. The RS10xx
          rules arrive with it and are a different thing - analyzer-authoring style advice: RS1032 wants
