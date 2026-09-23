@@ -12,6 +12,7 @@
     <NoPackageAnalysis>true</NoPackageAnalysis>
     <DevelopmentDependency>true</DevelopmentDependency>
     <DefineConstants>$(DefineConstants);PLAT_NO_RECORDS;BUILD_TOOLS</DefineConstants>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

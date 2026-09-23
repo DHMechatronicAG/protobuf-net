@@ -24,6 +24,7 @@
     <NoPackageAnalysis>true</NoPackageAnalysis>
     <DevelopmentDependency>true</DevelopmentDependency>
     <DefineConstants>$(DefineConstants);BUILD_TOOLS</DefineConstants>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

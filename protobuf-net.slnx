@@ -3,6 +3,8 @@
     <BuildType Name="Debug" />
     <BuildType Name="Release" />
     <BuildType Name="VS" />
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
   </Configurations>
   <Folder Name="/Common/">
     <File Path=".github/workflows/dotnet.yml" />
@@ -35,91 +37,136 @@
   </Folder>
   <Folder Name="/experimental/">
     <Project Path="src/protobuf-net.MessagePipes/protobuf-net.MessagePipes.csproj">
-      <BuildType Solution="VS|*" Project="Release" />
+      <BuildType Solution="VS|Any CPU" Project="Release" />
+      <BuildType Solution="VS|x64" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/protobuf-net.AspNetCore/protobuf-net.AspNetCore.csproj">
       <BuildType Solution="VS|*" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="src/protobuf-net.BuildTools.Legacy/protobuf-net.BuildTools.Legacy.csproj">
       <BuildType Solution="VS|*" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="src/protobuf-net.BuildTools/protobuf-net.BuildTools.csproj">
       <BuildType Solution="VS|*" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="src/protobuf-net.Core/protobuf-net.Core.csproj">
-      <BuildType Solution="VS|*" Project="Release" />
+      <BuildType Solution="VS|Any CPU" Project="Release" />
+      <BuildType Solution="VS|x64" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="src/protobuf-net.FSharp/protobuf-net.FSharp.csproj">
       <BuildType Solution="VS|*" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="src/protobuf-net.HybridCache/protobuf-net.HybridCache.csproj">
       <BuildType Solution="VS|*" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="src/protobuf-net.NodaTime/protobuf-net.NodaTime.csproj">
       <BuildType Solution="VS|*" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
-    <Project Path="src/protobuf-net.Protogen/protobuf-net.Protogen.csproj" />
-    <Project Path="src/protobuf-net.Reflection/protobuf-net.Reflection.csproj" />
+    <Project Path="src/protobuf-net.Protogen/protobuf-net.Protogen.csproj">
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
+    <Project Path="src/protobuf-net.Reflection/protobuf-net.Reflection.csproj">
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
     <Project Path="src/protobuf-net.ServiceModel/protobuf-net.ServiceModel.csproj">
       <BuildType Solution="VS|*" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="src/protobuf-net/protobuf-net.csproj">
-      <BuildType Solution="VS|*" Project="Release" />
+      <BuildType Solution="VS|Any CPU" Project="Release" />
+      <BuildType Solution="VS|x64" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
-    <Project Path="src/protogen/protogen.csproj" />
+    <Project Path="src/protogen/protogen.csproj">
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
   </Folder>
   <Folder Name="/tests/">
     <Project Path="src/AotConformanceTests/AotConformanceTests.csproj">
       <BuildType Solution="VS|*" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="src/Benchmark/Benchmark.csproj">
-      <BuildType Solution="VS|*" Project="Release" />
+      <BuildType Solution="VS|Any CPU" Project="Release" />
+      <BuildType Solution="VS|x64" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="src/BenchmarkBaseline/BenchmarkBaseline.csproj">
-      <BuildType Solution="VS|*" Project="Release" />
+      <BuildType Solution="VS|Any CPU" Project="Release" />
+      <BuildType Solution="VS|x64" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="src/BuildToolsSmokeTests/BuildToolsSmokeTests.csproj">
       <BuildType Solution="VS|*" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="src/BuildToolsUnitTests/BuildToolsUnitTests.csproj">
       <BuildType Solution="VS|*" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="src/CSharpTest/CSharpTest.csproj">
-      <BuildType Solution="VS|*" Project="Release" />
+      <BuildType Solution="VS|Any CPU" Project="Release" />
+      <BuildType Solution="VS|x64" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
-    <Project Path="src/Examples/Examples.csproj" />
-    <Project Path="src/LongDataTests/LongDataTests.csproj" />
+    <Project Path="src/Examples/Examples.csproj">
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
+    <Project Path="src/LongDataTests/LongDataTests.csproj">
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
     <Project Path="src/NativeGoogleTests/NativeGoogleTests.csproj">
       <BuildType Solution="VS|*" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="src/protobuf-net.FSharp.Test/protobuf-net.FSharp.Test.fsproj">
       <BuildType Solution="VS|*" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="src/protobuf-net.Reflection.Test/protobuf-net.Reflection.Test.csproj">
-      <BuildType Solution="VS|*" Project="Release" />
+      <BuildType Solution="VS|Any CPU" Project="Release" />
+      <BuildType Solution="VS|x64" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
-    <Project Path="src/protobuf-net.Test/protobuf-net.Test.csproj" />
+    <Project Path="src/protobuf-net.Test/protobuf-net.Test.csproj">
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
     <Project Path="src/protobuf-net.TestCompatibilityLevel/protobuf-net.TestCompatibilityLevel.csproj">
       <BuildType Solution="VS|*" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="src/protobuf-net.TestWeb/protobuf-net.TestWeb.csproj">
       <BuildType Solution="VS|*" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="src/protobuf-net.TestWebConsole/protobuf-net.TestWebConsole.csproj">
       <BuildType Solution="VS|*" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="src/VBTest/VBTest.vbproj">
-      <BuildType Solution="VS|*" Project="Release" />
+      <BuildType Solution="VS|Any CPU" Project="Release" />
+      <BuildType Solution="VS|x64" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
   </Folder>
   <Folder Name="/tools/">
     <Project Path="src/AotSmoke/AotSmoke.csproj">
       <BuildType Solution="VS|*" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="src/AotRefGen/AotRefGen.csproj">
       <BuildType Solution="VS|*" Project="Debug" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
   </Folder>
 </Solution>

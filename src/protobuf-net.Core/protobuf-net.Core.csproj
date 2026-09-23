@@ -8,6 +8,7 @@
     <AssemblyName>protobuf-net.Core</AssemblyName>
     <Title>protobuf-net.Core</Title>
     <Description>The protobuf-net serialization engine and build-time tooling; most projects should reference protobuf-net, which adds the runtime type model</Description>
+    <Platforms>AnyCPU;x64</Platforms>
     <!--<DefineConstants>$(DefineConstants);TRACK_USAGE</DefineConstants>-->
   </PropertyGroup>
 
@@ -32,17 +33,14 @@
        reference an analyzer assembly that compiles in Core's own sources. No cycle either way -
        BuildTools includes Core's sources rather than referencing the project. -->
   <ItemGroup>
-    <ProjectReference Include="..\protobuf-net.BuildTools\protobuf-net.BuildTools.csproj"
-                      ReferenceOutputAssembly="false" PrivateAssets="all" />
+    <ProjectReference Include="..\protobuf-net.BuildTools\protobuf-net.BuildTools.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\protobuf-net.BuildTools\bin\$(Configuration)\netstandard2.0\protobuf-net.BuildTools.dll"
-          Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="..\protobuf-net.BuildTools\bin\$(Configuration)\netstandard2.0\protobuf-net.BuildTools.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     <!-- renamed on the way in: a package's build props is auto-imported only when it is named after
          the package, so protobuf-net.BuildTools.props has to arrive here as protobuf-net.Core.props -->
-    <None Include="..\protobuf-net.BuildTools\protobuf-net.BuildTools.props"
-          Pack="true" PackagePath="build/protobuf-net.Core.props" Visible="false" />
+    <None Include="..\protobuf-net.BuildTools\protobuf-net.BuildTools.props" Pack="true" PackagePath="build/protobuf-net.Core.props" Visible="false" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)'=='netstandard2.1'">

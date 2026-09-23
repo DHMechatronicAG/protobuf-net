@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <Title>protobuf-net.HybridCache</Title>
     <Description>HybridCache serialization using protobuf-net</Description>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

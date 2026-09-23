@@ -5,6 +5,7 @@
     <RootNamespace>ProtoBuf.Test.TestCompatibilityLevel</RootNamespace>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <IsTestProject>false</IsTestProject>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
