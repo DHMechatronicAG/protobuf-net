@@ -6,6 +6,7 @@
     <NoWarn>$(NoWarn);xUnit1004</NoWarn>
     <OutputType>exe</OutputType>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

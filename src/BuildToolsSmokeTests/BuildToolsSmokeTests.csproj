@@ -6,6 +6,7 @@
 
         <IsPackable>false</IsPackable>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
+        <Platforms>AnyCPU;x64</Platforms>
     </PropertyGroup>
 
     <ItemGroup>
@@ -28,7 +29,7 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
 
-        <PackageReference Include="xunit.v3"/>
+        <PackageReference Include="xunit.v3" />
         <ProjectReference Include="..\protobuf-net\protobuf-net.csproj" />
     </ItemGroup>
 

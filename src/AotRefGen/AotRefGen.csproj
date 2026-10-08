@@ -12,6 +12,7 @@
     <IsPackable>false</IsPackable>
     <Description>Dev tool: emits ref-emit reference output for the AOT generator's golden fixtures</Description>
     <NoWarn>$(NoWarn);CS0618</NoWarn>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

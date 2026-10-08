@@ -5,6 +5,7 @@
     <RootNamespace>ProtoBuf.FSharp</RootNamespace>
     <Title>protobuf-net.FSharp</Title>
     <Description>F# collection support for protobuf-net: serializes list, Map and Set</Description>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

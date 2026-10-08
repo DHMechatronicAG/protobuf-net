@@ -11,13 +11,13 @@
     <IsPackable>false</IsPackable>
     <!-- TypeModel's non-generic Serialize/Deserialize are the right shape for reflection-driven tests -->
     <NoWarn>$(NoWarn);CS0618</NoWarn>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="../protobuf-net/protobuf-net.csproj" />
     <!-- referenced as an analyzer, so the generator runs for real during this project's build -->
-    <ProjectReference Include="../protobuf-net.BuildTools/protobuf-net.BuildTools.csproj"
-                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../protobuf-net.BuildTools/protobuf-net.BuildTools.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>
